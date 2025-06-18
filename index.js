@@ -115,7 +115,7 @@ app.post('/send-notification',async (req,res)=>{
         ? user.whatsappNumber
         : `91${user.whatsappNumber}`;
 
-      await gupshup.sendingTextTemplate(
+     const message= await gupshup.sendingTextTemplate(
         {
           template: {
             id: 'cb3b2ea1-32fb-4a8e-a9e3-f7902c77510b',
@@ -138,7 +138,7 @@ app.post('/send-notification',async (req,res)=>{
           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
         }
       );
-
+      console.log(fullNumber,message)
       await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
     }
     return res.json({message:"message sent successfully"})
