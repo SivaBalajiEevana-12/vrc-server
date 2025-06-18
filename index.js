@@ -15,8 +15,8 @@ app.post('/user',async(req,res)=>{
     const newVolunteer = new Volunteer(req.body);
     await newVolunteer.save();
     const fullNumber = newVolunteer.whatsappNumber.startsWith('91')
-        ? user.whatsappNumber
-        : `91${user.whatsappNumber}`;
+        ? newVolunteer.whatsappNumber
+        : `91${newVolunteer.whatsappNumber}`;
 
      const message= await gupshup.sendingTextTemplate(
         {
