@@ -24,12 +24,11 @@ const volunteerSchema = new mongoose.Schema({
   },
   previousVolunteer: {
     type: String,
-    enum: ["yes", "no"],
+    
    
   },
   gender: {
     type: String,
-    enum: ["male", "female"],
    
   },
   currentLocality: {
@@ -39,7 +38,7 @@ const volunteerSchema = new mongoose.Schema({
   },
   serviceAvailability: {
     type: String,
-    enum: ["6am-9am", "9am-6pm", "6pm-9pm"],
+
     required: true,
   },
   serviceType: {

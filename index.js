@@ -219,3 +219,8 @@ app.get('/manager',async(req,res)=>{
             return res.status(500).json({message:"Error in loading message",error:err.message})
     }
 })
+// app.delete('/delete',async (req,res)=>{
+//     const users=await Volunteer.deleteMany();
+//     const manager=await Manager.deleteMany();
+//     return res.status(200).json({data:users,data2:manager})
+// })
