@@ -10,38 +10,47 @@ const Manager=require('./models/manager');
 db();
 app.use(cors());
 app.use(express.json());
-app.post('/user',async(req,res)=>{
+app.post('/user', async (req, res) => {
   try {
-    const newVolunteer = new Volunteer(req.body);
-    await newVolunteer.save();
-    const fullNumber = newVolunteer.whatsappNumber.startsWith('91')
-        ? newVolunteer.whatsappNumber
-        : `91${newVolunteer.whatsappNumber}`;
+    const { age, ...rest } = req.body;
 
-     const message= await gupshup.sendingTextTemplate(
-        {
-          template: {
-            id: '868b6c27-b39a-4689-9def-261a5527d3dc',
-            params: [
-              newVolunteer.name,
-            //   location // fallback if message is empty
-            ],
-          },
-          'src.name': 'Production',
-          destination: fullNumber,
-          source: '917075176108',
+    // Convert age to a number, or set to undefined if invalid
+    const numericAge = !isNaN(Number(age)) ? Number(age) : undefined;
+
+    const newVolunteer = new Volunteer({
+      ...rest,
+      age: numericAge,
+    });
+
+    await newVolunteer.save();
+
+    const fullNumber = newVolunteer.whatsappNumber.startsWith('91')
+      ? newVolunteer.whatsappNumber
+      : `91${newVolunteer.whatsappNumber}`;
+
+    const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          params: [newVolunteer.name],
         },
-        {
-          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-        }
-      );
-      console.log(message.data);
+        'src.name': 'Production',
+        destination: fullNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
+
+    console.log(message.data);
     res.status(201).json({ message: "Registration successful" });
   } catch (error) {
     console.error("Error saving volunteer:", error);
     res.status(400).json({ message: "Registration failed", error: error.message });
   }
-})
+});
+
 app.get('/',async(req,res)=>{
     const users=await    Volunteer.find({});
     return res.json(users)
