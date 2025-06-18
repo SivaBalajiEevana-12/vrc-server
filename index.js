@@ -14,6 +14,28 @@ app.post('/user',async(req,res)=>{
   try {
     const newVolunteer = new Volunteer(req.body);
     await newVolunteer.save();
+    const fullNumber = newVolunteer.whatsappNumber.startsWith('91')
+        ? user.whatsappNumber
+        : `91${user.whatsappNumber}`;
+
+     const message= await gupshup.sendingTextTemplate(
+        {
+          template: {
+            id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+            params: [
+              newVolunteer.name,
+            //   location // fallback if message is empty
+            ],
+          },
+          'src.name': 'Production',
+          destination: fullNumber,
+          source: '917075176108',
+        },
+        {
+          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+        }
+      );
+      console.log(message.data);
     res.status(201).json({ message: "Registration successful" });
   } catch (error) {
     console.error("Error saving volunteer:", error);
