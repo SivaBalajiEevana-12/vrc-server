@@ -6,6 +6,7 @@ const Volunteer=require('./models/volunter')
 const cors=require('cors')
 const gupshup=require('@api/gupshup')
 const Manager=require('./models/manager');
+const Service=require('./models/services')
 // const manager = require('./models/manager');
 db();
 app.use(cors());
@@ -255,3 +256,53 @@ app.get('/manager',async(req,res)=>{
 //     const manager=await Manager.deleteMany();
 //     return res.status(200).json({data:users,data2:manager})
 // })
+app.post("/service", async (req, res) => {
+  try {
+    const service = new Service({ name: req.body.name });
+    const savedService = await service.save();
+    res.status(201).json(savedService);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// READ all services (GET)
+app.get("/service", async (req, res) => {
+  try {
+    const services = await Service.find();
+    res.json(services);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE a service by ID (PUT)
+app.put("/service/:id", async (req, res) => {
+  try {
+    const updatedService = await Service.findByIdAndUpdate(
+      req.params.id,
+      { name: req.body.name },
+      { new: true, runValidators: true }
+    );
+    if (!updatedService) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+    res.json(updatedService);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE a service by ID (DELETE)
+app.delete("/service/:id", async (req, res) => {
+  try {
+    const deletedService = await Service.findByIdAndDelete(req.params.id);
+    if (!deletedService) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+    res.json({ message: "Service deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
