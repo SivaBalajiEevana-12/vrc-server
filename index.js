@@ -98,17 +98,13 @@ const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
      const message= await gupshup.sendingTextTemplate(
         {
           template: {
-            id: '6aba3191-2388-4178-8437-eb94425264bb',
+            id: '04ad934d-66d0-4558-8c12-d740345e4c40',
             params: [
               user.name,
-             "Jaganath Ratha Yatra!",
+             "This is a gentle reminder: your seva begins in about 24 hour.",
+               "jaganath",
              user.serviceType,
-             manager.reportingTime,
-              manager.location,
-              manager.link,
-             manager.username,
-         
-              manager.phone,
+           
               " Jagannath Swami Ki "
             //   location // fallback if message is empty
             ],
@@ -128,7 +124,7 @@ const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
 };
 
 let oneDayReminderSent = false;
-let oneHourReminderSent = false;
+let oneHourReminderSent = true;
 
 cron.schedule("*/5 * * * *", async () => {
   const now = moment.tz("Asia/Kolkata");
@@ -310,14 +306,11 @@ const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
      const message= await gupshup.sendingTextTemplate(
         {
           template: {
-            id: '6aba3191-2388-4178-8437-eb94425264bb',
+            id: '2c4669f3-ffe1-4865-92f1-603c4fdea020',
             params: [
               user.name,
-             "Jaganath Ratha Yatra!",
+             "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
              user.serviceType,
-             manager.reportingTime,
-              manager.location,
-              manager.link,
              manager.username,
          
               manager.phone,
@@ -412,6 +405,23 @@ catch(err){
     return res.status(500).json({message:"Error is Registering the Manager",error:err.message})
 }
 })
+// app.delete("/delete-manager/:id", async (req, res) => {
+//   try {
+//     const { id } = req.params;
+
+//     const deletedManager = await Manager.findByIdAndDelete(id);
+
+//     if (!deletedManager) {
+//       return res.status(404).json({ message: "Manager not found." });
+//     }
+
+//     res.status(200).json({ message: "Manager deleted successfully.", data: deletedManager });
+//   } catch (err) {
+//     console.error("Delete Error:", err);
+//     res.status(500).json({ message: "Error deleting manager.", error: err.message });
+//   }
+// });
+
 app.get('/manager',async(req,res)=>{
     try{
         const manager=await Manager.find({});
