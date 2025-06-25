@@ -19,6 +19,7 @@ const csv = require('csv-parser');
 const VolunteerAttendance = require('./models/attendence')
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
+const ManualAttendance=require('./models/manual')
 // const fs = require('fs');
 // const path = require('path');
 const cloudinary = require('cloudinary').v2;
@@ -620,47 +621,56 @@ app.delete('/events/:id', async (req, res) => {
   }
 });
 
-// app.post('/group',async (req,res)=>{
-//   try{
-//          const volunteers=await Volunteer.find({});
-//            for (const user of volunteers) {
+app.post('/group', async (req, res) => {
+  try {
+    const start = new Date("2025-06-24T18:00:00+05:30");
+    const end = new Date("2025-06-25T09:50:00+05:30");
 
-//     const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+    const volunteers = await Volunteer.find({
+      submittedAt: {
+        $gte: start,
+        $lte: end,
+      }
+    });
 
-// const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-//   ? numberOnly
-//   : `91${numberOnly.slice(-10)}`; // take the last 10 digits
+    for (const user of volunteers) {
+      const numberOnly = user.whatsappNumber.replace(/\D/g, "");
+      const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+        ? numberOnly
+        : `91${numberOnly.slice(-10)}`;
 
-//           // const reporting = await Manager.findOne({ name: user.serviceType });
-//           const manager = await Manager.findOne({ serviceType: user.serviceType });
-//      const message= await gupshup.sendingTextTemplate(
-//         {
-//           template: {
-//             id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
-//             params: [
-//               user.name,
-//              "WhatsApp group",
-//                "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju ",
-//             //   location // fallback if message is empty
-//             ],
-//           },
-//           'src.name': 'Production',
-//           destination: fullNumber,
-//           source: '917075176108',
-//         },
-//         {
-//           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-//         }
-//       );
-//       console.log(fullNumber,message)
-//       await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
-//     }
-//     res.json({message:"message sent successfully"})
-//   } catch (err) {
-//     console.error("Error sending group message:", err);
-//     res.status(500).json({ message: "Failed to send group message", error: err.message });
-//   }
-// })
+      const manager = await Manager.findOne({ serviceType: user.serviceType });
+
+      const message = await gupshup.sendingTextTemplate(
+        {
+          template: {
+            id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
+            params: [
+              user.name,
+              "WhatsApp group",
+              "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju",
+            ],
+          },
+          'src.name': 'Production',
+          destination: fullNumber,
+          source: '917075176108',
+        },
+        {
+          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+        }
+      );
+
+      console.log(fullNumber, message);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // rate limiting
+    }
+
+    res.json({ message: "message sent successfully" });
+  } catch (err) {
+    console.error("Error sending group message:", err);
+    res.status(500).json({ message: "Failed to send group message", error: err.message });
+  }
+});
+
 // app.get('/sivaname',async (req,res)=>{
 //   try{
 // const message= await gupshup.sendingTextTemplate(
@@ -690,57 +700,57 @@ app.delete('/events/:id', async (req, res) => {
 //   }
 
 // })
-// app.post('/send-template', async (req, res) => {
-//   try {
-//     const users = await Volunteer.find({});
-//     const results = [];
+app.post('/send-template', async (req, res) => {
+  try {
+    const users = await Volunteer.find({ serviceType: "" });
+    const results = [];
 
-//     for (const user of users) {
-//       const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
-//       const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-//         ? numberOnly
-//         : `91${numberOnly.slice(-10)}`;
+    for (const user of users) {
+      const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+      const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+        ? numberOnly
+        : `91${numberOnly.slice(-10)}`;
 
-//       const data = qs.stringify({
-//         channel: 'whatsapp',
-//         source: '917075176108',
-//         destination: fullNumber,
-//         'src.name': '4KoeJVChI420QyWVhAW1kE7L',
-//         template: JSON.stringify({
-//           id: 'eac20b13-b389-46ad-917e-74df82058ce9',//eac20b13-b389-46ad-917e-74df82058ce9
-//           params: []
-//         }),
-//         message: JSON.stringify({
-//           image: {
-//             link: 'https://fss.gupshup.io/0/public/0/0/gupshup/917075176108/3f74176d-f1b5-498a-8f66-f9e702ef8775/1750766779757_hello.jpg'
-//           },
-//           type: 'image'
-//         })
-//       });
+      const data = qs.stringify({
+        channel: 'whatsapp',
+        source: '917075176108',
+        destination: fullNumber,
+        'src.name': '4KoeJVChI420QyWVhAW1kE7L',
+        template: JSON.stringify({
+          id: 'eac20b13-b389-46ad-917e-74df82058ce9',//eac20b13-b389-46ad-917e-74df82058ce9
+          params: []
+        }),
+        message: JSON.stringify({
+          image: {
+            link: 'https://fss.gupshup.io/0/public/0/0/gupshup/917075176108/3f74176d-f1b5-498a-8f66-f9e702ef8775/1750766779757_hello.jpg'
+          },
+          type: 'image'
+        })
+      });
 
-//       try {
-//         const response = await axios.post('https://api.gupshup.io/wa/api/v1/template/msg', data, {
-//           headers: {
-//             'Content-Type': 'application/x-www-form-urlencoded',
-//             'apikey': 'zbut4tsg1ouor2jks4umy1d92salxm38',
-//             'Cache-Control': 'no-cache'
-//           }
-//         });
-//         console.log(`Message sent to ${fullNumber}:`, response.data);
-//         results.push({ number: fullNumber, status: 'success', response: response.data });
-//       } catch (err) {
-//         console.error(`Error sending to ${fullNumber}:`, err.response?.data || err.message);
-//         results.push({ number: fullNumber, status: 'error', error: err.response?.data || err.message });
-//       }
-//     }
+      try {
+        const response = await axios.post('https://api.gupshup.io/wa/api/v1/template/msg', data, {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'apikey': 'zbut4tsg1ouor2jks4umy1d92salxm38',
+            'Cache-Control': 'no-cache'
+          }
+        });
+        console.log(`Message sent to ${fullNumber}:`, response.data);
+        results.push({ number: fullNumber, status: 'success', response: response.data });
+      } catch (err) {
+        console.error(`Error sending to ${fullNumber}:`, err.response?.data || err.message);
+        results.push({ number: fullNumber, status: 'error', error: err.response?.data || err.message });
+      }
+    }
 
-//     // Send final response after processing all users
-//     res.json({ success: true, results });
-//   } catch (err) {
-//     console.error('Unexpected server error:', err);
-//     res.status(500).json({ success: false, error: err.message });
-//   }
-// });
+    // Send final response after processing all users
+    res.json({ success: true, results });
+  } catch (err) {
+    console.error('Unexpected server error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
 // app.post('/bulk-update-service', async (req, res) => {
 //   const filePath = path.join(__dirname, 'allvolunteer.csv');
 
@@ -955,10 +965,65 @@ app.get('/verify/:id', async (req, res) => {
 });
 app.get('/api/attendance', async (req, res) => {
   try {
-    const records = await VolunteerAttendance.find().populate('volunteer');
+    const records = await ManualAttendance.find().populate('volunteer');
+    // const records = await Volunteer.find({ serviceType: "" })
+      // .populate({
     res.status(200).json(records);
   } catch (error) {
     console.error('Error fetching attendance:', error);
     res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+app.get('/user/:whatsappNumber',async (req,res)=>{
+  const { whatsappNumber } = req.params;
+
+  try {
+    const user = await Volunteer.findOne({ whatsappNumber });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+})
+app.get('/attendence/:whatsappNumber', async (req, res) => {
+  const { whatsappNumber } = req.params;
+
+  try {
+    // Exclude serviceType field using projection
+    const user = await Volunteer.findOne({ whatsappNumber }, { serviceType: 0, serviceAvailability: 0  });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+app.post('/manual-attendance', async (req, res) => {
+  const { volunteerId, status } = req.body;
+
+  if (!["Present", "Absent"].includes(status)) {
+    return res.status(400).json({ message: "Invalid attendance status." });
+  }
+
+  try {
+    const attendance = new ManualAttendance({
+      volunteer: volunteerId,
+      status
+    });
+
+    await attendance.save();
+    res.status(200).json({ message: "Attendance saved." });
+  } catch (err) {
+    console.error("Manual attendance error:", err);
+    res.status(500).json({ message: "Internal server error" });
   }
 });
