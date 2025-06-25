@@ -920,3 +920,44 @@ axios(config)
     res.status(500).json({ message: 'Internal Server Error' });
   }
 });
+app.get('/verify/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    // Find the attendance record by userId
+    const attendance = await VolunteerAttendance.findOne({ userId: id });
+
+    if (!attendance) {
+      return res.status(404).json({ message: 'Invalid or expired QR code.' });
+    }
+
+    // Check if already verified
+    if (attendance.verified) {
+      return res.status(200).json({ message: 'Volunteer already verified.', verified: true });
+    }
+
+    // Mark as verified
+    attendance.verified = true;
+    // attendance.verifiedAt = new Date(); // Optional: Track when verification occurred
+    await attendance.save();
+
+    res.status(200).json({
+      message: 'Volunteer successfully verified.',
+      volunteerId: attendance.volunteer,
+      verified: true,
+    });
+
+  } catch (error) {
+    console.error('Verification Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+app.get('/api/attendance', async (req, res) => {
+  try {
+    const records = await VolunteerAttendance.find().populate('volunteer');
+    res.status(200).json(records);
+  } catch (error) {
+    console.error('Error fetching attendance:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
