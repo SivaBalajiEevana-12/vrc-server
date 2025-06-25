@@ -16,5 +16,6 @@ const attendanceSchema = new mongoose.Schema({
     required: true,
   }
 }, { timestamps: true });
+attendanceSchema.index({ volunteer: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model("ManualAttendance", attendanceSchema);

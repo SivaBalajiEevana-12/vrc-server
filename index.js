@@ -1027,3 +1027,10 @@ app.post('/manual-attendance', async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+app.delete('/manual-attendance', async (req, res) => {
+  const deletem = await ManualAttendance.deleteMany({});
+  if (!deletem) {
+    return res.status(404).json({ message: "No attendance records found to delete." });
+  }
+  res.status(200).json({ message: "All attendance records deleted successfully.",deletedCount: deletem.deletedCount});
+})
