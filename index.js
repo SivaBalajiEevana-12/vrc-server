@@ -1015,6 +1015,14 @@ app.post('/manual-attendance', async (req, res) => {
   }
 
   try {
+    // Check if attendance already exists for this volunteer
+    const existing = await ManualAttendance.findOne({ volunteer: volunteerId });
+
+    if (existing) {
+      return res.status(409).json({ message: "Attendance already submitted." });
+    }
+
+    // Save attendance
     const attendance = new ManualAttendance({
       volunteer: volunteerId,
       status
@@ -1022,11 +1030,14 @@ app.post('/manual-attendance', async (req, res) => {
 
     await attendance.save();
     res.status(200).json({ message: "Attendance saved." });
+
   } catch (err) {
     console.error("Manual attendance error:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
 app.delete('/manual-attendance', async (req, res) => {
   const deletem = await ManualAttendance.deleteMany({});
   if (!deletem) {
