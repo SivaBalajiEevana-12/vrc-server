@@ -328,52 +328,68 @@ app.post('/meetup', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
-app.post('/send-notification',async (req,res)=>{
-    try{
-        const volunteers=await Volunteer.find({});
-           for (const user of volunteers) {
+app.post('/send-notification', async (req, res) => {
+  try {
+    const volunteers = await Volunteer.find({ serviceType: { $ne: "" } }); // Only volunteers with serviceType
+    let count = 0;
 
-    const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+    for (const user of volunteers) {
+      try {
+        const numberOnly = user.whatsappNumber.replace(/\D/g, "");
+        const fullNumber =
+          numberOnly.length === 12 && numberOnly.startsWith("91")
+            ? numberOnly
+            : `91${numberOnly.slice(-10)}`;
 
-const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-  ? numberOnly
-  : `91${numberOnly.slice(-10)}`; // take the last 10 digits
+        const manager = await Manager.findOne({ serviceType: user.serviceType });
 
-          // const reporting = await Manager.findOne({ name: user.serviceType });
-          const manager = await Manager.findOne({ serviceType: user.serviceType });
-     const message= await gupshup.sendingTextTemplate(
-        {
-          template: {
-            id: '2c4669f3-ffe1-4865-92f1-603c4fdea020',
-            params: [
-              user.name,
-             "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
-             user.serviceType,
-             manager.username,
-         
-              manager.phone,
-              " Jagannath Swami Ki "
-            //   location // fallback if message is empty
-            ],
-          },
-          'src.name': 'Production',
-          destination: fullNumber,
-          source: '917075176108',
-        },
-        {
-          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+        if (!manager) {
+          console.warn(`⚠️ No manager found for serviceType: ${user.serviceType}`);
+          continue;
         }
-      );
-      console.log(fullNumber,message)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
+
+        const message = await gupshup.sendingTextTemplate(
+          {
+            template: {
+              id: 'c61659e4-1ce2-4de2-a425-df3f23f3bf58',
+              params: [
+                user.name,
+                "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit.",
+                user.serviceType,
+                manager.username,
+                manager.phone,
+                "Jagannath Swami Ki "
+              ],
+            },
+            'src.name': 'Production',
+            destination: fullNumber,
+            source: '917075176108',
+          },
+          {
+            apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+          }
+        );
+
+        console.log(`✅ Sent to ${fullNumber}:`, message);
+        count++;
+
+        // Optional: delay between sends (avoid hitting rate limit)
+        await new Promise(resolve => setTimeout(resolve, 800));
+
+      } catch (err) {
+        console.error(`❌ Error sending to ${user.whatsappNumber}:`, err.message);
+      }
     }
-    return res.json({message:"message sent successfully"})
-    }
-    catch(err){
-        console.log(err);
-        return res.status(500).json({message:"Failed to send notification",error:err.message})
-    }
-})
+
+    console.log(`✅ Total messages sent: ${count}`);
+    return res.json({ message: "Messages sent successfully", total: count });
+
+  } catch (err) {
+    console.error("❌ Server error:", err);
+    return res.status(500).json({ message: "Failed to send notification", error: err.message });
+  }
+});
+
 app.post("/register-volunteer", async (req, res) => {
     try{
   // const { username, phone, serviceType } = req.body
@@ -1040,18 +1056,21 @@ app.delete('/manual-attendance', async (req, res) => {
   res.status(200).json({ message: "All attendance records deleted successfully.",deletedCount: deletem.deletedCount});
 })
 app.get('/si',async (req,res)=>{
+  const name= "siva";
+  const service="Decoration"
+  const number="919392952946"
  const message= await gupshup.sendingTextTemplate(
         {
           template: {
-            id: '2c4669f3-ffe1-4865-92f1-603c4fdea020',
+            id: 'c61659e4-1ce2-4de2-a425-df3f23f3bf58',
             params: [
-              "user.name",
+              name,
              "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
-             "ser.serviceType",
+             service,
              "manager.username",
          
-              "manager.phone",
-              " Jagannath Swami Ki "
+              number,
+              "Jagannath Swami Ki "
             //   location // fallback if message is empty
             ],
           },
