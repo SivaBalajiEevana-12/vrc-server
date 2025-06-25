@@ -1085,3 +1085,72 @@ app.get('/si',async (req,res)=>{
     console.log(message.data);
     return res.status(200).json({message:"message sent successfully"})
 })
+app.get('/new',async (req,res)=>{
+ try {
+  const today6pm = new Date();
+  today6pm.setHours(18, 0, 0, 0); // today at 6:00 PM
+
+  const volunteers = await Volunteer.find({
+    submittedAt: { $gte: today6pm }
+  });
+
+  return res.json(volunteers);
+} catch (error) {
+  console.error("Error fetching volunteers:", error);
+  return res.status(500).json({ error: "Internal server error" });
+}
+})
+app.post('/bulk-attendance', async (req, res) => {
+  try {
+    const today6pm = new Date();
+    today6pm.setHours(18, 0, 0, 0); // today at 6 PM
+
+    // Find volunteers who submitted after 6 PM
+    const volunteers = await Volunteer.find({
+      submittedAt: { $gte: today6pm }
+    });
+
+    if (!volunteers.length) {
+      return res.status(404).json({ message: "No volunteers found after 6 PM." });
+    }
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+
+    let added = 0, skipped = 0;
+
+    for (const volunteer of volunteers) {
+      // Check if attendance already exists for today
+      const alreadyExists = await ManualAttendance.findOne({
+        volunteer: volunteer._id,
+        timestamp: { $gte: startOfToday, $lte: endOfToday }
+      });
+
+      if (alreadyExists) {
+        skipped++;
+        continue;
+      }
+
+      const attendance = new ManualAttendance({
+        volunteer: volunteer._id,
+        status: "Present"
+      });
+
+      await attendance.save();
+      added++;
+    }
+
+    res.status(200).json({
+      message: `Attendance processing completed.`,
+      added,
+      skipped
+    });
+
+  } catch (err) {
+    console.error("Bulk attendance error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
