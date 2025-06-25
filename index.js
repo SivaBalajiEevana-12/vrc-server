@@ -623,15 +623,11 @@ app.delete('/events/:id', async (req, res) => {
 
 app.post('/group', async (req, res) => {
   try {
-    const start = new Date("2025-06-24T18:00:00+05:30");
-    const end = new Date("2025-06-25T09:50:00+05:30");
+    // const start = new Date("2025-06-24T18:00:00+05:30");
+    // const end = new Date("2025-06-25T09:50:00+05:30");
 
-    const volunteers = await Volunteer.find({
-      submittedAt: {
-        $gte: start,
-        $lte: end,
-      }
-    });
+    const volunteers = await Volunteer.find({});
+    let count=0;
 
     for (const user of volunteers) {
       const numberOnly = user.whatsappNumber.replace(/\D/g, "");
@@ -644,11 +640,9 @@ app.post('/group', async (req, res) => {
       const message = await gupshup.sendingTextTemplate(
         {
           template: {
-            id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
+            id: '9a9bfee5-acde-488f-8b5d-9e4c57ee14d8',
             params: [
               user.name,
-              "WhatsApp group",
-              "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju",
             ],
           },
           'src.name': 'Production',
@@ -659,11 +653,11 @@ app.post('/group', async (req, res) => {
           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
         }
       );
-
+      count++;
       console.log(fullNumber, message);
-      await new Promise(resolve => setTimeout(resolve, 1000)); // rate limiting
+      // await new Promise(resolve => setTimeout(resolve, 1000)); // rate limiting
     }
-
+console.log(`Total messages sent: ${count}`);
     res.json({ message: "message sent successfully" });
   } catch (err) {
     console.error("Error sending group message:", err);
@@ -979,12 +973,12 @@ app.get('/user/:whatsappNumber',async (req,res)=>{
 
   try {
     const user = await Volunteer.findOne({ whatsappNumber });
-
+    const manager = await Manager.findOne({ serviceType: user.serviceType });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    res.status(200).json(user);
+    res.status(200).json({user,manager});
   } catch (error) {
     console.error('Error fetching user:', error);
     res.status(500).json({ message: 'Internal Server Error' });
@@ -1044,4 +1038,31 @@ app.delete('/manual-attendance', async (req, res) => {
     return res.status(404).json({ message: "No attendance records found to delete." });
   }
   res.status(200).json({ message: "All attendance records deleted successfully.",deletedCount: deletem.deletedCount});
+})
+app.get('/si',async (req,res)=>{
+ const message= await gupshup.sendingTextTemplate(
+        {
+          template: {
+            id: '2c4669f3-ffe1-4865-92f1-603c4fdea020',
+            params: [
+              "user.name",
+             "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
+             "ser.serviceType",
+             "manager.username",
+         
+              "manager.phone",
+              " Jagannath Swami Ki "
+            //   location // fallback if message is empty
+            ],
+          },
+          'src.name': 'Production',
+          destination: '919392952946',
+          source: '917075176108',
+        },
+        {
+          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+        }
+      );
+    console.log(message.data);
+    return res.status(200).json({message:"message sent successfully"})
 })
