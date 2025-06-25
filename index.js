@@ -16,12 +16,22 @@ const qs = require('qs');
 const fs = require('fs');
 const path = require('path');
 const csv = require('csv-parser');
-const Attendance = require('./models/attendence')
+const VolunteerAttendance = require('./models/attendence')
+const QRCode = require('qrcode');
+const { v4: uuidv4 } = require('uuid');
+// const fs = require('fs');
+// const path = require('path');
+const cloudinary = require('cloudinary').v2;
 // const file=require('./')
 // const manager = require('./models/manager');
 db();
 app.use(cors());
 app.use(express.json());
+cloudinary.config({
+  cloud_name: 'dvm9yapki',
+  api_key: '435241843987915',
+  api_secret: 'RC506MY4qn6DV5shRvYOmvBXIOc'
+});
 
 const sendReminder = async (event, type) => {
   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
@@ -207,6 +217,7 @@ app.post('/user', async (req, res) => {
       );
     console.log(message.data);
     console.log(message1.data);
+    console.log(newVolunteer)
     res.status(201).json({ message: "Registration successful" });
   } catch (error) {
     console.error("Error saving volunteer:", error);
@@ -609,191 +620,191 @@ app.delete('/events/:id', async (req, res) => {
   }
 });
 
-app.post('/group',async (req,res)=>{
-  try{
-         const volunteers=await Volunteer.find({});
-           for (const user of volunteers) {
+// app.post('/group',async (req,res)=>{
+//   try{
+//          const volunteers=await Volunteer.find({});
+//            for (const user of volunteers) {
 
-    const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+//     const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
 
-const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-  ? numberOnly
-  : `91${numberOnly.slice(-10)}`; // take the last 10 digits
+// const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+//   ? numberOnly
+//   : `91${numberOnly.slice(-10)}`; // take the last 10 digits
 
-          // const reporting = await Manager.findOne({ name: user.serviceType });
-          const manager = await Manager.findOne({ serviceType: user.serviceType });
-     const message= await gupshup.sendingTextTemplate(
-        {
-          template: {
-            id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
-            params: [
-              user.name,
-             "WhatsApp group",
-               "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju ",
-            //   location // fallback if message is empty
-            ],
-          },
-          'src.name': 'Production',
-          destination: fullNumber,
-          source: '917075176108',
-        },
-        {
-          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-        }
-      );
-      console.log(fullNumber,message)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
-    }
-    res.json({message:"message sent successfully"})
-  } catch (err) {
-    console.error("Error sending group message:", err);
-    res.status(500).json({ message: "Failed to send group message", error: err.message });
-  }
-})
-app.get('/sivaname',async (req,res)=>{
-  try{
-const message= await gupshup.sendingTextTemplate(
-        {
-          template: {
-            id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
-            params: [
-              "siva",
-             "WhatsApp group",
-               "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju ",
-            //   location // fallback if message is empty
-            ],
-          },
-          'src.name': 'Production',
-          destination: '917682059088',
-          source: '917075176108',
-        },
-        {
-          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-        }
-      );
-      return res.status(201).json({ message: `Registration successful ${message.data} `});
-  }
-  catch(err){
-    console.error("Error in sivaname:", err);
-    res.status(500).json({ message: "Internal server error", error: err.message });
-  }
+//           // const reporting = await Manager.findOne({ name: user.serviceType });
+//           const manager = await Manager.findOne({ serviceType: user.serviceType });
+//      const message= await gupshup.sendingTextTemplate(
+//         {
+//           template: {
+//             id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
+//             params: [
+//               user.name,
+//              "WhatsApp group",
+//                "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju ",
+//             //   location // fallback if message is empty
+//             ],
+//           },
+//           'src.name': 'Production',
+//           destination: fullNumber,
+//           source: '917075176108',
+//         },
+//         {
+//           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+//         }
+//       );
+//       console.log(fullNumber,message)
+//       await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
+//     }
+//     res.json({message:"message sent successfully"})
+//   } catch (err) {
+//     console.error("Error sending group message:", err);
+//     res.status(500).json({ message: "Failed to send group message", error: err.message });
+//   }
+// })
+// app.get('/sivaname',async (req,res)=>{
+//   try{
+// const message= await gupshup.sendingTextTemplate(
+//         {
+//           template: {
+//             id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
+//             params: [
+//               "siva",
+//              "WhatsApp group",
+//                "https://chat.whatsapp.com/IMEzoJR7JUoIYItO4NZRju ",
+//             //   location // fallback if message is empty
+//             ],
+//           },
+//           'src.name': 'Production',
+//           destination: '917682059088',
+//           source: '917075176108',
+//         },
+//         {
+//           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+//         }
+//       );
+//       return res.status(201).json({ message: `Registration successful ${message.data} `});
+//   }
+//   catch(err){
+//     console.error("Error in sivaname:", err);
+//     res.status(500).json({ message: "Internal server error", error: err.message });
+//   }
 
-})
-app.post('/send-template', async (req, res) => {
-  try {
-    const users = await Volunteer.find({});
-    const results = [];
+// })
+// app.post('/send-template', async (req, res) => {
+//   try {
+//     const users = await Volunteer.find({});
+//     const results = [];
 
-    for (const user of users) {
-      const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
-      const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-        ? numberOnly
-        : `91${numberOnly.slice(-10)}`;
+//     for (const user of users) {
+//       const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+//       const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+//         ? numberOnly
+//         : `91${numberOnly.slice(-10)}`;
 
-      const data = qs.stringify({
-        channel: 'whatsapp',
-        source: '917075176108',
-        destination: fullNumber,
-        'src.name': '4KoeJVChI420QyWVhAW1kE7L',
-        template: JSON.stringify({
-          id: 'eac20b13-b389-46ad-917e-74df82058ce9',//eac20b13-b389-46ad-917e-74df82058ce9
-          params: []
-        }),
-        message: JSON.stringify({
-          image: {
-            link: 'https://fss.gupshup.io/0/public/0/0/gupshup/917075176108/3f74176d-f1b5-498a-8f66-f9e702ef8775/1750766779757_hello.jpg'
-          },
-          type: 'image'
-        })
-      });
+//       const data = qs.stringify({
+//         channel: 'whatsapp',
+//         source: '917075176108',
+//         destination: fullNumber,
+//         'src.name': '4KoeJVChI420QyWVhAW1kE7L',
+//         template: JSON.stringify({
+//           id: 'eac20b13-b389-46ad-917e-74df82058ce9',//eac20b13-b389-46ad-917e-74df82058ce9
+//           params: []
+//         }),
+//         message: JSON.stringify({
+//           image: {
+//             link: 'https://fss.gupshup.io/0/public/0/0/gupshup/917075176108/3f74176d-f1b5-498a-8f66-f9e702ef8775/1750766779757_hello.jpg'
+//           },
+//           type: 'image'
+//         })
+//       });
 
-      try {
-        const response = await axios.post('https://api.gupshup.io/wa/api/v1/template/msg', data, {
-          headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'apikey': 'zbut4tsg1ouor2jks4umy1d92salxm38',
-            'Cache-Control': 'no-cache'
-          }
-        });
-        console.log(`Message sent to ${fullNumber}:`, response.data);
-        results.push({ number: fullNumber, status: 'success', response: response.data });
-      } catch (err) {
-        console.error(`Error sending to ${fullNumber}:`, err.response?.data || err.message);
-        results.push({ number: fullNumber, status: 'error', error: err.response?.data || err.message });
-      }
-    }
+//       try {
+//         const response = await axios.post('https://api.gupshup.io/wa/api/v1/template/msg', data, {
+//           headers: {
+//             'Content-Type': 'application/x-www-form-urlencoded',
+//             'apikey': 'zbut4tsg1ouor2jks4umy1d92salxm38',
+//             'Cache-Control': 'no-cache'
+//           }
+//         });
+//         console.log(`Message sent to ${fullNumber}:`, response.data);
+//         results.push({ number: fullNumber, status: 'success', response: response.data });
+//       } catch (err) {
+//         console.error(`Error sending to ${fullNumber}:`, err.response?.data || err.message);
+//         results.push({ number: fullNumber, status: 'error', error: err.response?.data || err.message });
+//       }
+//     }
 
-    // Send final response after processing all users
-    res.json({ success: true, results });
-  } catch (err) {
-    console.error('Unexpected server error:', err);
-    res.status(500).json({ success: false, error: err.message });
-  }
-});
-app.post('/bulk-update-service', async (req, res) => {
-  const filePath = path.join(__dirname, 'allvolunteer.csv');
+//     // Send final response after processing all users
+//     res.json({ success: true, results });
+//   } catch (err) {
+//     console.error('Unexpected server error:', err);
+//     res.status(500).json({ success: false, error: err.message });
+//   }
+// });
+// app.post('/bulk-update-service', async (req, res) => {
+//   const filePath = path.join(__dirname, 'allvolunteer.csv');
 
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).json({ error: 'CSV file not found.' });
-  }
+//   if (!fs.existsSync(filePath)) {
+//     return res.status(404).json({ error: 'CSV file not found.' });
+//   }
 
-  const updates = [];
-  const results = {
-    updated: [],
-    notFound: [],
-    failed: [],
-  };
+//   const updates = [];
+//   const results = {
+//     updated: [],
+//     notFound: [],
+//     failed: [],
+//   };
 
-  fs.createReadStream(filePath)
-    .pipe(csv())
-    .on('data', (row) => {
-      // Normalize all keys to lowercase for safer access
-      const normalizedRow = {};
-      for (const key in row) {
-        normalizedRow[key.trim().toLowerCase()] = row[key].trim();
-      }
+//   fs.createReadStream(filePath)
+//     .pipe(csv())
+//     .on('data', (row) => {
+//       // Normalize all keys to lowercase for safer access
+//       const normalizedRow = {};
+//       for (const key in row) {
+//         normalizedRow[key.trim().toLowerCase()] = row[key].trim();
+//       }
 
-      const rawNumber = normalizedRow['whatsapp number'] || normalizedRow['phone number'];
-      const serviceType = normalizedRow['service'];
+//       const rawNumber = normalizedRow['whatsapp number'] || normalizedRow['phone number'];
+//       const serviceType = normalizedRow['service'];
 
-      if (!rawNumber || !serviceType) return;
+//       if (!rawNumber || !serviceType) return;
 
-      const numberOnly = rawNumber.replace(/\D/g, '');
-      const tenDigitNumber = numberOnly.slice(-10); // Assume last 10 digits are correct
+//       const numberOnly = rawNumber.replace(/\D/g, '');
+//       const tenDigitNumber = numberOnly.slice(-10); // Assume last 10 digits are correct
 
-      updates.push({ whatsappNumber: tenDigitNumber, serviceType });
-    })
-    .on('end', async () => {
-      for (const { whatsappNumber, serviceType } of updates) {
-        try {
-          const updated = await Volunteer.findOneAndUpdate(
-            { whatsappNumber },
-            { serviceType },
-            { new: true }
-          );
+//       updates.push({ whatsappNumber: tenDigitNumber, serviceType });
+//     })
+//     .on('end', async () => {
+//       for (const { whatsappNumber, serviceType } of updates) {
+//         try {
+//           const updated = await Volunteer.findOneAndUpdate(
+//             { whatsappNumber },
+//             { serviceType },
+//             { new: true }
+//           );
 
-          if (updated) {
-            results.updated.push(whatsappNumber);
-          } else {
-            results.notFound.push(whatsappNumber);
-          }
-        } catch (error) {
-          results.failed.push({ whatsappNumber, error: error.message });
-        }
-      }
+//           if (updated) {
+//             results.updated.push(whatsappNumber);
+//           } else {
+//             results.notFound.push(whatsappNumber);
+//           }
+//         } catch (error) {
+//           results.failed.push({ whatsappNumber, error: error.message });
+//         }
+//       }
 
-      res.json({
-        message: 'Bulk serviceType update complete.',
-        totalProcessed: updates.length,
-        ...results,
-      });
-    })
-    .on('error', (err) => {
-      console.error('CSV Read Error:', err);
-      res.status(500).json({ error: 'Failed to process CSV.' });
-    });
-});
-router.post("/attendence", async (req, res) => {
+//       res.json({
+//         message: 'Bulk serviceType update complete.',
+//         totalProcessed: updates.length,
+//         ...results,
+//       });
+//     })
+//     .on('error', (err) => {
+//       console.error('CSV Read Error:', err);
+//       res.status(500).json({ error: 'Failed to process CSV.' });
+//     });
+// });
+app.post("/attendence", async (req, res) => {
   const { volunteerId } = req.query;
 
   if (!volunteerId) {
@@ -824,4 +835,88 @@ router.post("/attendence", async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 });
+app.post('/generate-qr/:volunteerId', async (req, res) => {
+  const { volunteerId } = req.params;
 
+  try {
+    const volunteer = await Volunteer.findById(volunteerId);
+    if (!volunteer) {
+      return res.status(404).json({ message: "Volunteer not found" });
+    }
+
+    const userId = uuidv4(); // Unique for QR scanning
+
+    // QR content and local file path
+    const qrContent = `https://vrc-server-production.up.railway.app/verify/${userId}`;
+    const qrFolder = path.join(__dirname, '../qrcodes');
+    const qrPath = path.join(qrFolder, `${userId}.png`);
+
+    fs.mkdirSync(qrFolder, { recursive: true });
+
+    await QRCode.toFile(qrPath, qrContent);
+
+    // Upload to Cloudinary
+    const uploadResult = await cloudinary.uploader.upload(qrPath, {
+      folder: 'volunteer_qr',
+      public_id: userId,
+      resource_type: 'image',
+    });
+
+    fs.unlinkSync(qrPath); // Clean up local file
+
+    // Save attendance entry
+    const attendance = new VolunteerAttendance({
+      volunteer: volunteer._id,
+      userId,
+      qrUrl: uploadResult.secure_url,
+      verified: false,
+    });
+
+    await attendance.save();
+    const data = qs.stringify({
+  channel: 'whatsapp',
+  source: '917075176108',
+  destination: '919392952946',
+  'src.name': '4KoeJVChI420QyWVhAW1kE7L',
+  template: JSON.stringify({
+    id: 'a5376cf3-bb0d-48ee-99fb-d0eba59e27b6',
+    params: [volunteer.name]
+  }),
+  message: JSON.stringify({
+    image: {
+      link: uploadResult.secure_url // Use the uploaded QR code URL
+    },
+    type: 'image'
+  })
+});
+
+const config = {
+  method: 'post',
+  url: 'https://api.gupshup.io/wa/api/v1/template/msg',
+  headers: {
+    'Cache-Control': 'no-cache',
+    'Content-Type': 'application/x-www-form-urlencoded',
+    'apikey': 'zbut4tsg1ouor2jks4umy1d92salxm38'
+  },
+  data: data
+};
+
+axios(config)
+  .then(response => {
+    console.log('Response:', response.data);
+  })
+  .catch(error => {
+    console.error('Error:', error.response ? error.response.data : error.message);
+  });
+
+    res.status(200).json({
+      message: 'QR code generated successfully',
+      qrUrl: uploadResult.secure_url,
+      userId,
+    });
+
+  } catch (error) {
+    console.error('QR Generation Error:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});

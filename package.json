@@ -14,6 +14,7 @@
   "dependencies": {
     "@api/gupshup": "file:.api/apis/gupshup",
     "axios": "^1.10.0",
+    "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dotenv": "^16.5.0",
@@ -24,6 +25,8 @@
     "node-cron": "^4.1.1",
     "nodemailer": "^7.0.3",
     "nodemon": "^3.1.10",
-    "qs": "^6.14.0"
+    "qrcode": "^1.5.4",
+    "qs": "^6.14.0",
+    "uuid": "^11.1.0"
   }
 }

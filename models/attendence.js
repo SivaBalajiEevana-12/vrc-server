@@ -1,26 +1,41 @@
 const mongoose = require("mongoose");
 
-const attendanceSchema = new mongoose.Schema({
+const volunteerAttendanceSchema = new mongoose.Schema({
   volunteer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Volunteer",
     required: true,
   },
+  userId: {
+    type: String,
+    required: true,
+    unique: true,
+  },
+  qrUrl: {
+    type: String,
+    trim: true,
+    default: "",
+  },
+  verified: {
+    type: Boolean,
+    default: false,
+  },
   date: {
     type: Date,
-    required: true,
-    default: Date.now, // ✅ current date-time
+    
+    default: () => {
+      const now = new Date();
+      now.setHours(0, 0, 0, 0); // Normalize to today's midnight
+      return now;
+    },
   },
   status: {
     type: String,
     enum: ["Present"],
     default: "Present",
-    required: true,
-  },
-  remarks: {
-    type: String,
-    trim: true,
   },
 }, {
   timestamps: true,
 });
+
+module.exports = mongoose.model("VolunteerAttendance", volunteerAttendanceSchema);
