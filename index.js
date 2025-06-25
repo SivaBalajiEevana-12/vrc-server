@@ -351,7 +351,7 @@ app.post('/send-notification', async (req, res) => {
         const message = await gupshup.sendingTextTemplate(
           {
             template: {
-              id: 'c61659e4-1ce2-4de2-a425-df3f23f3bf58',
+              id: '65040951-7a50-41ec-852a-8fa3de43df4f',//65040951-7a50-41ec-852a-8fa3de43df4f
               params: [
                 user.name,
                 "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit.",
@@ -1062,7 +1062,7 @@ app.get('/si',async (req,res)=>{
  const message= await gupshup.sendingTextTemplate(
         {
           template: {
-            id: 'c61659e4-1ce2-4de2-a425-df3f23f3bf58',
+            id: '65040951-7a50-41ec-852a-8fa3de43df4f',
             params: [
               name,
              "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
@@ -1075,7 +1075,7 @@ app.get('/si',async (req,res)=>{
             ],
           },
           'src.name': 'Production',
-          destination: '919392952946',
+          destination: '917682059088',
           source: '917075176108',
         },
         {
