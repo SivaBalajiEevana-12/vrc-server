@@ -938,6 +938,7 @@ app.get('/verify/:id', async (req, res) => {
 
     // Mark as verified
     attendance.verified = true;
+    attendance.status = 'Present'; // Optional: Set status to Present
     // attendance.verifiedAt = new Date(); // Optional: Track when verification occurred
     await attendance.save();
 

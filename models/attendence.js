@@ -31,8 +31,8 @@ const volunteerAttendanceSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ["Present"],
-    default: "Present",
+    enum: ["Present","Absent"],
+    default: "Absent",
   },
 }, {
   timestamps: true,
