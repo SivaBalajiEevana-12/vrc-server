@@ -34,136 +34,136 @@ cloudinary.config({
   api_secret: 'RC506MY4qn6DV5shRvYOmvBXIOc'
 });
 
-const sendReminder = async (event, type) => {
-  console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
-  const users= await Volunteer.find({});
-  for (const user of users){
-     const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+// const sendReminder = async (event, type) => {
+//   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
+//   const users= await Volunteer.find({});
+//   for (const user of users){
+//      const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
 
-const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-  ? numberOnly
-  : `91${numberOnly.slice(-10)}`; // take the last 10 digits
+// const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+//   ? numberOnly
+//   : `91${numberOnly.slice(-10)}`; // take the last 10 digits
 
-  await gupshup.sendingTextTemplate(
-    {
-      template: {
-        id: "2643a762-e3b0-45fc-9005-fc687ee18480",
-        params: [
-          user.name,
-          event.dateDisplay,
-          event.timeDisplay,
-          event.venue,
-          event.locationLink,
-        ],
-      },
-      "src.name": "Production",
-      destination: fullNumber,
-      source: "917075176108",
-    },
-    {
-      apikey: "zbut4tsg1ouor2jks4umy1d92salxm38",
-    }
-  );
-}
-}
+//   await gupshup.sendingTextTemplate(
+//     {
+//       template: {
+//         id: "2643a762-e3b0-45fc-9005-fc687ee18480",
+//         params: [
+//           user.name,
+//           event.dateDisplay,
+//           event.timeDisplay,
+//           event.venue,
+//           event.locationLink,
+//         ],
+//       },
+//       "src.name": "Production",
+//       destination: fullNumber,
+//       source: "917075176108",
+//     },
+//     {
+//       apikey: "zbut4tsg1ouor2jks4umy1d92salxm38",
+//     }
+//   );
+// }
+// }
 
-cron.schedule("*/15 * * * *", async () => {
-  console.log("🔄 Running cron job to check for upcoming events...");
-  try {
-    const now = moment();
-    const oneDayAhead = now.clone().add(1, "day");
-    const oneHourAhead = now.clone().add(1, "hour");
+// cron.schedule("*/15 * * * *", async () => {
+//   console.log("🔄 Running cron job to check for upcoming events...");
+//   try {
+//     const now = moment();
+//     const oneDayAhead = now.clone().add(1, "day");
+//     const oneHourAhead = now.clone().add(1, "hour");
 
-    const events = await Event.find({
-      cronDate: { $gte: now.toDate(), $lte: moment().add(2, "days").toDate() },
-    });
+//     const events = await Event.find({
+//       cronDate: { $gte: now.toDate(), $lte: moment().add(2, "days").toDate() },
+//     });
 
-    for (const event of events) {
-      const eventTime = moment(event.cronDate);
-      const diffToDay = Math.abs(eventTime.diff(oneDayAhead, "minutes"));
-      const diffToHour = Math.abs(eventTime.diff(oneHourAhead, "minutes"));
+//     for (const event of events) {
+//       const eventTime = moment(event.cronDate);
+//       const diffToDay = Math.abs(eventTime.diff(oneDayAhead, "minutes"));
+//       const diffToHour = Math.abs(eventTime.diff(oneHourAhead, "minutes"));
 
-      if (diffToDay <= 15 && !event.sentOneDayReminder) {
-        await sendReminder(event, "⏰ 1-day");
-        event.sentOneDayReminder = true;
-        await event.save();
-      } else if (diffToHour <= 15 && !event.sentOneHourReminder) {
-        await sendReminder(event, "⏰ 1-hour");
-        event.sentOneHourReminder = true;
-        await event.save();
-      }
-    }
-  } catch (err) {
-    console.error("❌ Cron job error:", err.message);
-  }
-});
-const FIXED_EVENT_TIME = moment.tz("2025-06-27 08:00", "Asia/Kolkata");
+//       if (diffToDay <= 15 && !event.sentOneDayReminder) {
+//         await sendReminder(event, "⏰ 1-day");
+//         event.sentOneDayReminder = true;
+//         await event.save();
+//       } else if (diffToHour <= 15 && !event.sentOneHourReminder) {
+//         await sendReminder(event, "⏰ 1-hour");
+//         event.sentOneHourReminder = true;
+//         await event.save();
+//       }
+//     }
+//   } catch (err) {
+//     console.error("❌ Cron job error:", err.message);
+//   }
+// });
+// const FIXED_EVENT_TIME = moment.tz("2025-06-27 08:00", "Asia/Kolkata");
 
-const sendReminder1 = async (type) => {
-  console.log(`🔔 Sending ${type} reminder for event at ${FIXED_EVENT_TIME.format("DD/MM/YYYY hh:mm A")}`);
+// const sendReminder1 = async (type) => {
+//   console.log(`🔔 Sending ${type} reminder for event at ${FIXED_EVENT_TIME.format("DD/MM/YYYY hh:mm A")}`);
   
-         const volunteers=await Volunteer.find({});
-           for (const user of volunteers) {
+//          const volunteers=await Volunteer.find({});
+//            for (const user of volunteers) {
 
-    const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
+//     const numberOnly = user.whatsappNumber.replace(/\D/g, ""); // remove non-digits
 
-const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
-  ? numberOnly
-  : `91${numberOnly.slice(-10)}`; // take the last 10 digits
+// const fullNumber = numberOnly.length === 12 && numberOnly.startsWith("91")
+//   ? numberOnly
+//   : `91${numberOnly.slice(-10)}`; // take the last 10 digits
 
-          // const reporting = await Manager.findOne({ name: user.serviceType });
-          const manager = await Manager.findOne({ serviceType: user.serviceType });
-     const message= await gupshup.sendingTextTemplate(
-        {
-          template: {
-            id: '04ad934d-66d0-4558-8c12-d740345e4c40',
-            params: [
-              user.name,
-             "This is a gentle reminder: your seva begins in about 24 hour.",
-               "jaganath",
-             user.serviceType,
+//           // const reporting = await Manager.findOne({ name: user.serviceType });
+//           const manager = await Manager.findOne({ serviceType: user.serviceType });
+//      const message= await gupshup.sendingTextTemplate(
+//         {
+//           template: {
+//             id: '04ad934d-66d0-4558-8c12-d740345e4c40',
+//             params: [
+//               user.name,
+//              "This is a gentle reminder: your seva begins in about 24 hour.",
+//                "jaganath",
+//              user.serviceType,
            
-              " Jagannath Swami Ki "
-            //   location // fallback if message is empty
-            ],
-          },
-          'src.name': 'Production',
-          destination: fullNumber,
-          source: '917075176108',
-        },
-        {
-          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-        }
-      );
-      console.log(fullNumber,message)
-      await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
-    }
-    // return res.json({message:"message sent successfully"})
-};
+//               " Jagannath Swami Ki "
+//             //   location // fallback if message is empty
+//             ],
+//           },
+//           'src.name': 'Production',
+//           destination: fullNumber,
+//           source: '917075176108',
+//         },
+//         {
+//           apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+//         }
+//       );
+//       console.log(fullNumber,message)
+//       await new Promise(resolve => setTimeout(resolve, 1000)); // rate limit guard
+//     }
+//     // return res.json({message:"message sent successfully"})
+// };
 
-let oneDayReminderSent = false;
-let oneHourReminderSent = true;
+// let oneDayReminderSent = false;
+// let oneHourReminderSent = true;
 
-cron.schedule("*/5 * * * *", async () => {
-  const now = moment.tz("Asia/Kolkata");
-  const diffMinutes = FIXED_EVENT_TIME.diff(now, "minutes");
+// cron.schedule("*/5 * * * *", async () => {
+//   const now = moment.tz("Asia/Kolkata");
+//   const diffMinutes = FIXED_EVENT_TIME.diff(now, "minutes");
 
-  console.log(`🕒 Now: ${now.format("DD/MM/YYYY hh:mm A")}, Event in ${diffMinutes} mins`);
+//   console.log(`🕒 Now: ${now.format("DD/MM/YYYY hh:mm A")}, Event in ${diffMinutes} mins`);
 
-  try {
-    if (diffMinutes <= 1440 && diffMinutes > 1430 && !oneDayReminderSent) {
-      await sendReminder1("⏰ 1-day");
-      oneDayReminderSent = true;
-    }
+//   try {
+//     if (diffMinutes <= 1440 && diffMinutes > 1430 && !oneDayReminderSent) {
+//       await sendReminder1("⏰ 1-day");
+//       oneDayReminderSent = true;
+//     }
 
-    if (diffMinutes <= 60 && diffMinutes > 50 && !oneHourReminderSent) {
-      await sendReminder1("⏰ 1-hour");
-      oneHourReminderSent = true;
-    }
-  } catch (err) {
-    console.error("❌ Cron error:", err.message);
-  }
-});
+//     if (diffMinutes <= 60 && diffMinutes > 50 && !oneHourReminderSent) {
+//       await sendReminder1("⏰ 1-hour");
+//       oneHourReminderSent = true;
+//     }
+//   } catch (err) {
+//     console.error("❌ Cron error:", err.message);
+//   }
+// });
 
 app.post('/user', async (req, res) => {
   try {
