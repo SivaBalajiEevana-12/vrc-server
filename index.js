@@ -20,6 +20,12 @@ const VolunteerAttendance = require('./models/attendence')
 const QRCode = require('qrcode');
 const { v4: uuidv4 } = require('uuid');
 const ManualAttendance=require('./models/manual')
+const ExcelJS = require('exceljs');
+const Register = require('./routes/register');
+// const ExcelJS = require('exceljs');
+// const fs = require('fs');
+// const path = require('path');
+const archiver = require('archiver');
 // const fs = require('fs');
 // const path = require('path');
 const cloudinary = require('cloudinary').v2;
@@ -33,7 +39,7 @@ cloudinary.config({
   api_key: '435241843987915',
   api_secret: 'RC506MY4qn6DV5shRvYOmvBXIOc'
 });
-
+app.use('/register',Register);
 // const sendReminder = async (event, type) => {
 //   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
 //   const users= await Volunteer.find({});
@@ -246,8 +252,9 @@ app.get('/',async(req,res)=>{
     const users=await    Volunteer.find({});
     return res.json(users)
 })
-app.listen('3300',()=>{
-    console.log("siva");
+const PORT = process.env.PORT || 5000;
+app.listen(PORT,()=>{
+    console.log("siva",PORT);
 })
 // PATCH /:id
 app.patch("/:id", async (req, res) => {
@@ -330,7 +337,9 @@ app.post('/meetup', async (req, res) => {
 });
 app.post('/send-notification', async (req, res) => {
   try {
-    const volunteers = await Volunteer.find({ serviceType: { $ne: "" } }); // Only volunteers with serviceType
+    // const volunteers = await Volunteer.find({ serviceType:"" }); 
+    // // Only volunteers with serviceType
+    const volunteers = await Volunteer.find({ serviceType: { $ne: "" } });
     let count = 0;
 
     for (const user of volunteers) {
@@ -341,7 +350,7 @@ app.post('/send-notification', async (req, res) => {
             ? numberOnly
             : `91${numberOnly.slice(-10)}`;
 
-        const manager = await Manager.findOne({ serviceType: user.serviceType });
+        const manager = await Manager.findOne({serviceType: user.serviceType });
 
         if (!manager) {
           console.warn(`⚠️ No manager found for serviceType: ${user.serviceType}`);
@@ -351,13 +360,15 @@ app.post('/send-notification', async (req, res) => {
         const message = await gupshup.sendingTextTemplate(
           {
             template: {
-              id: '65040951-7a50-41ec-852a-8fa3de43df4f',//65040951-7a50-41ec-852a-8fa3de43df4f
+              id: 'f6c9b738-735f-4554-8cc4-0d5f0f45daa7',//f6c9b738-735f-4554-8cc4-0d5f0f45daa7
               params: [
                 user.name,
                 "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit.",
                 user.serviceType,
                 manager.username,
                 manager.phone,
+               "Please report before 2 PM or as per your slot timing at our Volunteer Reception, located just after the ",
+              "*IIAM College Main Gate*.",
                 "Jagannath Swami Ki "
               ],
             },
@@ -370,11 +381,11 @@ app.post('/send-notification', async (req, res) => {
           }
         );
 
-        console.log(`✅ Sent to ${fullNumber}:`, message);
+        console.log(`✅ Sent to ${fullNumber}:`, message.data);
         count++;
 
         // Optional: delay between sends (avoid hitting rate limit)
-        await new Promise(resolve => setTimeout(resolve, 800));
+        await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (err) {
         console.error(`❌ Error sending to ${user.whatsappNumber}:`, err.message);
@@ -761,69 +772,69 @@ app.post('/send-template', async (req, res) => {
     res.status(500).json({ success: false, error: err.message });
   }
 });
-// app.post('/bulk-update-service', async (req, res) => {
-//   const filePath = path.join(__dirname, 'allvolunteer.csv');
+app.post('/bulk-update-service', async (req, res) => {
+  const filePath = path.join(__dirname, 'mainVolunteer.csv');
 
-//   if (!fs.existsSync(filePath)) {
-//     return res.status(404).json({ error: 'CSV file not found.' });
-//   }
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'CSV file not found.' });
+  }
 
-//   const updates = [];
-//   const results = {
-//     updated: [],
-//     notFound: [],
-//     failed: [],
-//   };
+  const updates = [];
+  const results = {
+    updated: [],
+    notFound: [],
+    failed: [],
+  };
 
-//   fs.createReadStream(filePath)
-//     .pipe(csv())
-//     .on('data', (row) => {
-//       // Normalize all keys to lowercase for safer access
-//       const normalizedRow = {};
-//       for (const key in row) {
-//         normalizedRow[key.trim().toLowerCase()] = row[key].trim();
-//       }
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('data', (row) => {
+      // Normalize all keys to lowercase for safer access
+      const normalizedRow = {};
+      for (const key in row) {
+        normalizedRow[key.trim().toLowerCase()] = row[key].trim();
+      }
 
-//       const rawNumber = normalizedRow['whatsapp number'] || normalizedRow['phone number'];
-//       const serviceType = normalizedRow['service'];
+      const rawNumber = normalizedRow['whatsapp number'] || normalizedRow['phone number'];
+      const serviceType = normalizedRow['service'];
 
-//       if (!rawNumber || !serviceType) return;
+      if (!rawNumber || !serviceType) return;
 
-//       const numberOnly = rawNumber.replace(/\D/g, '');
-//       const tenDigitNumber = numberOnly.slice(-10); // Assume last 10 digits are correct
+      const numberOnly = rawNumber.replace(/\D/g, '');
+      const tenDigitNumber = numberOnly.slice(-10); // Assume last 10 digits are correct
 
-//       updates.push({ whatsappNumber: tenDigitNumber, serviceType });
-//     })
-//     .on('end', async () => {
-//       for (const { whatsappNumber, serviceType } of updates) {
-//         try {
-//           const updated = await Volunteer.findOneAndUpdate(
-//             { whatsappNumber },
-//             { serviceType },
-//             { new: true }
-//           );
+      updates.push({ whatsappNumber: tenDigitNumber, serviceType });
+    })
+    .on('end', async () => {
+      for (const { whatsappNumber, serviceType } of updates) {
+        try {
+          const updated = await Volunteer.findOneAndUpdate(
+            { whatsappNumber },
+            { serviceType },
+            { new: true }
+          );
 
-//           if (updated) {
-//             results.updated.push(whatsappNumber);
-//           } else {
-//             results.notFound.push(whatsappNumber);
-//           }
-//         } catch (error) {
-//           results.failed.push({ whatsappNumber, error: error.message });
-//         }
-//       }
+          if (updated) {
+            results.updated.push(whatsappNumber);
+          } else {
+            results.notFound.push(whatsappNumber);
+          }
+        } catch (error) {
+          results.failed.push({ whatsappNumber, error: error.message });
+        }
+      }
 
-//       res.json({
-//         message: 'Bulk serviceType update complete.',
-//         totalProcessed: updates.length,
-//         ...results,
-//       });
-//     })
-//     .on('error', (err) => {
-//       console.error('CSV Read Error:', err);
-//       res.status(500).json({ error: 'Failed to process CSV.' });
-//     });
-// });
+      res.json({
+        message: 'Bulk serviceType update complete.',
+        totalProcessed: updates.length,
+        ...results,
+      });
+    })
+    .on('error', (err) => {
+      console.error('CSV Read Error:', err);
+      res.status(500).json({ error: 'Failed to process CSV.' });
+    });
+});
 app.post("/attendence", async (req, res) => {
   const { volunteerId } = req.query;
 
@@ -1062,7 +1073,7 @@ app.get('/si',async (req,res)=>{
  const message= await gupshup.sendingTextTemplate(
         {
           template: {
-            id: '65040951-7a50-41ec-852a-8fa3de43df4f',
+            id: 'f6c9b738-735f-4554-8cc4-0d5f0f45daa7',
             params: [
               name,
              "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit. ",
@@ -1070,6 +1081,8 @@ app.get('/si',async (req,res)=>{
              "manager.username",
          
               number,
+              "Please report before 2 PM or as per your slot timing at our Volunteer Reception, located just after the ",
+              "*IIAM College Main Gate*.",
               "Jagannath Swami Ki "
             //   location // fallback if message is empty
             ],
@@ -1087,14 +1100,18 @@ app.get('/si',async (req,res)=>{
 })
 app.get('/new',async (req,res)=>{
  try {
-  const today6pm = new Date();
-  today6pm.setHours(18, 0, 0, 0); // today at 6:00 PM
+  // const today6pm = new Date();
+  // today6pm.setHours(18, 0, 0, 0); // today at 6:00 PM
 
-  const volunteers = await Volunteer.find({
-    submittedAt: { $gte: today6pm }
-  });
+const volunteers = await Volunteer.find({
+  serviceType: "VIP Hospitality"
+});
 
-  return res.json(volunteers);
+// Assuming you want to get the serviceType from the first volunteer
+
+
+  console.log("Volunteers:", volunteers.length);
+  return res.json({volunteers});
 } catch (error) {
   console.error("Error fetching volunteers:", error);
   return res.status(500).json({ error: "Internal server error" });
@@ -1151,6 +1168,227 @@ app.post('/bulk-attendance', async (req, res) => {
 
   } catch (err) {
     console.error("Bulk attendance error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+// const ExcelJS = require('exceljs');
+
+app.get('/api/attendance/export', async (req, res) => {
+  try {
+    const records = await ManualAttendance.find().populate('volunteer');
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Attendance');
+
+    // Columns: Name, Service Type, Phone, Status, Date
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Service Type', key: 'serviceType', width: 30 },
+      { header: 'Phone', key: 'whatsappNumber', width: 15 },
+      { header: 'Status', key: 'status', width: 10 },
+      { header: 'Date', key: 'date', width: 20 },
+    ];
+
+    // Add rows
+    records.forEach(record => {
+      const v = record.volunteer || {};
+      worksheet.addRow({
+        name: v.name || '',
+        serviceType: v.serviceType || '',
+        whatsappNumber: v.whatsappNumber || '',
+        status: record.status || '',
+        date: new Date(record.date).toLocaleString()
+      });
+    });
+
+    // Set headers
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=attendance_export.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (error) {
+    console.error('Error exporting Excel:', error);
+    res.status(500).json({ message: 'Failed to export Excel' });
+  }
+});
+
+app.get('/export-by-manager', async (req, res) => {
+  try {
+    const managers = await Manager.find();
+
+    if (!managers || managers.length === 0) {
+      return res.status(404).json({ message: "No managers found." });
+    }
+
+    const exportDir = path.join(__dirname, 'manager_excels');
+    if (!fs.existsSync(exportDir)) fs.mkdirSync(exportDir);
+
+    // Cleanup previous files
+    fs.readdirSync(exportDir).forEach(file => {
+      fs.unlinkSync(path.join(exportDir, file));
+    });
+
+    for (const manager of managers) {
+      const volunteers = await Volunteer.find({
+        serviceType: manager.serviceType
+      });
+
+      if (!volunteers.length) continue;
+
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet('Volunteers');
+
+      worksheet.columns = [
+        { header: 'Name', key: 'name', width: 25 },
+        { header: 'Phone', key: 'whatsappNumber', width: 20 },
+        { header: 'College/Company', key: 'collegeCompany', width: 30 },
+        { header: 'Age', key: 'age', width: 10 },
+        { header: 'Locality', key: 'currentLocality', width: 30 },
+        { header: 'Service Time', key: 'serviceAvailability', width: 20 },
+        { header: 'Submitted At', key: 'submittedAt', width: 25 }
+      ];
+
+      volunteers.forEach(v => {
+        worksheet.addRow({
+          name: v.name,
+          whatsappNumber: v.whatsappNumber,
+          collegeCompany: v.collegeCompany,
+          age: v.age,
+          currentLocality: v.currentLocality,
+          serviceAvailability: v.serviceAvailability,
+          submittedAt: new Date(v.submittedAt).toLocaleString(),
+        });
+      });
+
+      const safeFileName = `${manager.serviceType.replace(/\s+/g, '_')}_${manager.phone}.xlsx`;
+      const filePath = path.join(exportDir, safeFileName);
+      await workbook.xlsx.writeFile(filePath);
+    }
+
+    // Zip all files
+    const zipPath = path.join(__dirname, 'all_managers.zip');
+    const output = fs.createWriteStream(zipPath);
+    const archive = archiver('zip', { zlib: { level: 9 } });
+
+    output.on('close', () => {
+      res.download(zipPath, 'managers.zip', () => {
+        fs.rmSync(exportDir, { recursive: true, force: true });
+        fs.unlinkSync(zipPath);
+      });
+    });
+
+    archive.pipe(output);
+    archive.directory(exportDir, false);
+    archive.finalize();
+
+  } catch (error) {
+    console.error("Export error:", error);
+    res.status(500).json({ error: "Failed to generate Excel files." });
+  }
+});
+app.get('/api/attendance1', async (req, res) => {
+  try {
+    const records = await ManualAttendance.find().populate('volunteer');
+
+    // Prepare workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Volunteer Attendance');
+
+    // Set columns
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'WhatsApp', key: 'whatsappNumber', width: 20 },
+      { header: 'Service Type', key: 'serviceType', width: 30 },
+      { header: 'Status', key: 'status', width: 15 },
+      { header: 'Date', key: 'date', width: 20 },
+    ];
+
+    // Fill in data
+    records.forEach((record) => {
+      worksheet.addRow({
+        name: record.volunteer?.name || 'N/A',
+        whatsappNumber: record.volunteer?.whatsappNumber || 'N/A',
+        serviceType: record.volunteer?.serviceType || 'N/A',
+        status: record.status,
+        date: new Date(record.date).toLocaleDateString('en-GB'),
+      });
+    });
+
+    // Write to file or send directly
+    const filePath = path.join(__dirname, 'Volunteer_Attendance_Records.xlsx');
+    await workbook.xlsx.writeFile(filePath);
+
+    res.download(filePath, 'Volunteer_Attendance_Records.xlsx', (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).send('Could not download the file.');
+      } else {
+        fs.unlink(filePath, () => {}); // Optional: delete file after sending
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching attendance:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+app.get('/bulk-attendance-count', async (req, res) => {
+  try {
+    // Target date: June 27, 2025 at 6:00 AM
+    const afterDate = new Date(2025, 5, 27, 6, 0, 0); // Month is 0-indexed (June = 5)
+
+    // Get volunteers who submitted after the date
+    const volunteers = await Volunteer.find({
+      submittedAt: { $gte: afterDate }
+    });
+
+    // Create Excel workbook
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Volunteer Attendance Count');
+
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 30 },
+      { header: 'WhatsApp', key: 'whatsappNumber', width: 20 },
+      { header: 'Service Type', key: 'serviceType', width: 30 },
+      { header: 'Gender', key: 'gender', width: 15 },
+      { header: 'Current Locality', key: 'currentLocality', width: 20 },
+    ];
+
+    // Add data to worksheet
+    volunteers.forEach((v) => {
+      worksheet.addRow({
+        name: v.name || 'N/A',
+        whatsappNumber: v.whatsappNumber || 'N/A',
+        serviceType: v.serviceType || 'N/A',
+        gender: v.gender || 'N/A',
+        currentLocality: v.currentLocality || 'N/A',
+      });
+    });
+
+    // Save Excel file
+    const filePath = path.join(__dirname, 'Spot_Registration.xlsx');
+    await workbook.xlsx.writeFile(filePath);
+
+    // Send file for download
+    res.download(filePath, 'Spot_Registration.xlsx', (err) => {
+      if (err) {
+        console.error('Download error:', err);
+        res.status(500).send('Could not download the file.');
+      } else {
+        fs.unlink(filePath, () => {}); // Optional: delete after sending
+      }
+    });
+
+    // DO NOT send res.json() after res.download()
+    // Remove this part:
+    // res.status(200).json({
+    //   message: `Volunteers submitted after 27-06-2025 6 AM: ${volunteers.length}`,
+    //   count: volunteers
+    // });
+
+  } catch (err) {
+    console.error("Error generating Excel:", err);
     res.status(500).json({ message: "Internal server error" });
   }
 });
