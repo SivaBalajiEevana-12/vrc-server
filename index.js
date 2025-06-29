@@ -12,6 +12,7 @@ const moment = require('moment');
 const moment1 = require("moment-timezone");
 const cron = require('node-cron');
 const axios = require('axios');
+const xlsx = require('xlsx');
 const qs = require('qs');
 const fs = require('fs');
 const path = require('path');
@@ -878,7 +879,7 @@ app.post('/generate-qr/:volunteerId', async (req, res) => {
     const userId = uuidv4(); // Unique for QR scanning
 
     // QR content and local file path
-    const qrContent = `https://vrc-server-production.up.railway.app/verify/${userId}`;
+    const qrContent = `https://vrc-server-110406681774.asia-south1.run.app/verify/${userId}`;
     const qrFolder = path.join(__dirname, '../qrcodes');
     const qrPath = path.join(qrFolder, `${userId}.png`);
 
@@ -1392,3 +1393,233 @@ app.get('/bulk-attendance-count', async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+app.get('/send-request', async (req, res) => {
+  const results = [];
+  const filePath = path.join(__dirname, 'FLC REGISSTERED - PHONE CALLS RESPONSE - Sheet1.csv');
+
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('data', (row) => {
+      // Collect everyone (no filter)
+      results.push({
+        name: row['NAME'],
+        number: row['NUMBER'],
+        volunteer: row['VOLUNTTER NAME'],
+        response: row['PHONE CALL RESPONSE']
+      });
+    })
+    .on('end', async () => {
+      for (const user of results) {
+        // const message = `Hare Krishna ${user.name}, thank you for registering during Ratha Yatra! You're invited to our Youth Session on facing life challenges – 29th June, 6 PM at IIAM College, MVP. Join us!`;
+
+        try {
+          // Replace with your actual API call
+          // await axios.post('https://your-api.com/send', {
+          //   to: user.number,
+          //   message: message
+          // });
+          // remove non-digits
+           const oddNumber = user.number.replace(/\D/g, '');
+           const fullNumber = oddNumber.length === 12 && oddNumber.startsWith("91") ? oddNumber : `91${oddNumber.slice(-10)}`; // take the last 10 digits
+
+          const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: '4aa8b3e9-9299-4258-89cb-e0cf53acae71',
+          params: [],
+        },
+        'src.name': 'Production',
+        destination: fullNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
+          console.log(`Message sent to ${user.name} (${fullNumber}):`, message.data);
+
+          // console.log(`✅ Sent to ${user.name} (${fullNumber})`);
+        } catch (err) {
+          console.error(`❌ Failed for ${user.name} (${user.number}):`, err.message);
+        }
+      }
+
+      res.send(`✅ Notifications sent to ${results.length} users.`);
+    })
+    .on('error', (err) => {
+      console.error('❌ CSV parsing error:', err);
+      res.status(500).send('Error reading the CSV file.');
+    });
+});
+// 
+const Attendance1= require('./models/fcuserdata');
+
+// Helper function
+function cleanStatus(status) {
+  const s = status?.trim()?.toLowerCase();
+  return s === "present" ? "Present" : s === "absent" ? "Absent" : null;
+}
+
+function parseDate(dateStr) {
+  if (!dateStr) return null;
+  const d = new Date(dateStr);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+app.get("/bulk-insert-attendance", async (req, res) => {
+  const filePath = path.join(__dirname,"main.csv");
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: "CSV file not found." });
+  }
+
+  const records = [];
+  const results = {
+    inserted: [],
+    duplicate: [],
+    failed: [],
+  };
+
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on("data", (row) => {
+      const normalized = {};
+      for (const key in row) {
+        normalized[key.trim().toLowerCase()] = row[key].trim();
+      }
+
+      const name = normalized["name"];
+      const rawPhone = normalized["number"] || normalized["whatsapp number"];
+      const status = cleanStatus(normalized["status"]);
+      const date = parseDate(normalized["date"]);
+
+      if (!name || !rawPhone) return;
+
+      const cleanedPhone = rawPhone.replace(/\D/g, "").slice(-10); // last 10 digits
+
+      records.push({
+        name,
+        phone: cleanedPhone,
+        status,
+        date,
+      });
+    })
+    .on("end", async () => {
+      for (const record of records) {
+        try {
+          const existing = await Attendance1.findOne({ phone: record.phone });
+          if (existing) {
+            results.duplicate.push(record.phone);
+            continue;
+          }
+
+          const inserted = await Attendance1.create(record);
+          results.inserted.push(inserted.phone);
+        } catch (err) {
+          results.failed.push({ phone: record.phone, error: err.message });
+        }
+      }
+
+      res.json({
+        message: "✅ Bulk attendance insertion complete.",
+        total: records.length,
+        ...results,
+      });
+    })
+    .on("error", (err) => {
+      console.error("CSV Parse Error:", err);
+      res.status(500).json({ error: "Failed to process CSV." });
+    });
+});
+app.get('/usersdata',async(req,res)=>{
+  try{
+      const users =await Attendance1.find({});
+      return res.status(200).json(users);
+  }
+  catch(err){
+    console.error("Error fetching users data:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+})
+app.post('/flcattendence', async (req, res) => {
+  const { name, phone} = req.body;
+
+  if (!name || !phone) {
+    return res.status(400).json({ message: "Name, phone and status are required." });
+  }
+
+  const cleanedPhone = phone.replace(/\D/g, "").slice(-10); // last 10 digits
+
+  try {
+    // Check if user already exists
+    const existingUser = await Attendance1.findOne({ phone: cleanedPhone });
+
+    if (existingUser) {
+      return res.status(409).json({ message: "User already exists." });
+    }
+
+    // Create new attendance record
+    const newAttendance = new Attendance1({
+      name,
+      phone: cleanedPhone,
+    // Use provided date or current date
+    });
+
+    await newAttendance.save();
+    res.status(201).json({ message: "Attendance saved successfully.", attendance: newAttendance });
+  } catch (error) {
+    console.error("Error saving attendance:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+});
+app.get('/flcattendence/:phone', async (req, res) => {
+  const { phone } = req.params;
+
+  try {
+    // Exclude serviceType field using projection
+    const user = await Attendance1.findOne({ phone });
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Error fetching user:', error);
+    res.status(500).json({ message: 'Internal Server Error' });
+  }
+});
+app.post('/manual-flc-attendance', async (req, res) => {
+  const { id, status } = req.body;
+
+  if (!["Present", "Absent"].includes(status)) {
+    return res.status(400).json({ message: "Invalid attendance status." });
+  }
+
+  try {
+    const existing = await Attendance1.findById(id);
+
+    if (!existing) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    if (existing.status) {
+      return res.status(409).json({ message: "Attendance already submitted." });
+    }
+
+    await Attendance1.findByIdAndUpdate(id, {
+      status,
+      date: new Date(),
+    });
+
+    res.status(200).json({ message: "Attendance saved." });
+
+  } catch (err) {
+    console.error("Manual attendance error:", err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
+
+// Route: GET /api/import-from-local
