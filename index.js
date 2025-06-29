@@ -1396,7 +1396,7 @@ app.get('/bulk-attendance-count', async (req, res) => {
 
 app.get('/send-request', async (req, res) => {
   const results = [];
-  const filePath = path.join(__dirname, 'FLC REGISSTERED - PHONE CALLS RESPONSE - Sheet1.csv');
+  const filePath = path.join(__dirname, 'main.csv');
 
   fs.createReadStream(filePath)
     .pipe(csv())
@@ -1410,6 +1410,7 @@ app.get('/send-request', async (req, res) => {
       });
     })
     .on('end', async () => {
+     let count=5;
       for (const user of results) {
         // const message = `Hare Krishna ${user.name}, thank you for registering during Ratha Yatra! You're invited to our Youth Session on facing life challenges – 29th June, 6 PM at IIAM College, MVP. Join us!`;
 
@@ -1426,11 +1427,11 @@ app.get('/send-request', async (req, res) => {
           const message = await gupshup.sendingTextTemplate(
       {
         template: {
-          id: '4aa8b3e9-9299-4258-89cb-e0cf53acae71',
+          id: '45b40c0a-3556-4f4e-857e-b513d0e408b1',
           params: [],
         },
         'src.name': 'Production',
-        destination: fullNumber,
+        destination: '919392952946',
         source: '917075176108',
       },
       {
@@ -1438,7 +1439,10 @@ app.get('/send-request', async (req, res) => {
       }
     );
           console.log(`Message sent to ${user.name} (${fullNumber}):`, message.data);
-
+      count++;
+      if(count>5){
+        break;
+      }
           // console.log(`✅ Sent to ${user.name} (${fullNumber})`);
         } catch (err) {
           console.error(`❌ Failed for ${user.name} (${user.number}):`, err.message);
@@ -1468,7 +1472,7 @@ function parseDate(dateStr) {
 }
 
 app.get("/bulk-insert-attendance", async (req, res) => {
-  const filePath = path.join(__dirname,"main.csv");
+  const filePath = path.join(__dirname,"newFlc.csv");
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "CSV file not found." });
