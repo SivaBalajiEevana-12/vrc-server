@@ -41,6 +41,7 @@ cloudinary.config({
   api_secret: 'RC506MY4qn6DV5shRvYOmvBXIOc'
 });
 app.use('/register',Register);
+app.use('/july',require('./routes/julyattendence'))
 // const sendReminder = async (event, type) => {
 //   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
 //   const users= await Volunteer.find({});
@@ -340,58 +341,83 @@ app.post('/send-notification', async (req, res) => {
   try {
     // const volunteers = await Volunteer.find({ serviceType:"" }); 
     // // Only volunteers with serviceType
-    const volunteers = await Volunteer.find({ serviceType: { $ne: "" } });
-    let count = 0;
+  const volunteers = await ManualAttendance.find()
+  .populate({
+    path: 'volunteer',
+    match: { serviceType: "RATHA PRASADAM DISTRIBUTION" }
+  });
 
-    for (const user of volunteers) {
-      try {
-        const numberOnly = user.whatsappNumber.replace(/\D/g, "");
-        const fullNumber =
-          numberOnly.length === 12 && numberOnly.startsWith("91")
-            ? numberOnly
-            : `91${numberOnly.slice(-10)}`;
+const filtered = volunteers.filter(v => v.volunteer);
 
-        const manager = await Manager.findOne({serviceType: user.serviceType });
+let count = 0;
 
-        if (!manager) {
-          console.warn(`⚠️ No manager found for serviceType: ${user.serviceType}`);
-          continue;
-        }
+for (const user of filtered) {
+  try {
+    const numberOnly = user.volunteer.whatsappNumber?.replace(/\D/g, "");
+    const fullNumber = numberOnly?.length === 12 && numberOnly.startsWith("91")
+      ? numberOnly
+      : `91${numberOnly?.slice(-10)}`;
 
-        const message = await gupshup.sendingTextTemplate(
-          {
-            template: {
-              id: 'f6c9b738-735f-4554-8cc4-0d5f0f45daa7',//f6c9b738-735f-4554-8cc4-0d5f0f45daa7
-              params: [
-                user.name,
-                "Thank you for stepping forward to serve in the upcoming Jaganath Ratha Yatra! Your service is not just an offering of time — it is a sacred offering to Lord Jagannath that purifies the heart and brings immense spiritual benefit.",
-                user.serviceType,
-                manager.username,
-                manager.phone,
-               "Please report before 2 PM or as per your slot timing at our Volunteer Reception, located just after the ",
-              "*IIAM College Main Gate*.",
-                "Jagannath Swami Ki "
-              ],
-            },
-            'src.name': 'Production',
-            destination: fullNumber,
-            source: '917075176108',
-          },
-          {
-            apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-          }
-        );
+    const manager = await Manager.findOne({ serviceType: user.volunteer.serviceType });
 
-        console.log(`✅ Sent to ${fullNumber}:`, message.data);
-        count++;
-
-        // Optional: delay between sends (avoid hitting rate limit)
-        await new Promise(resolve => setTimeout(resolve, 100));
-
-      } catch (err) {
-        console.error(`❌ Error sending to ${user.whatsappNumber}:`, err.message);
-      }
+    if (!manager) {
+      console.warn(`⚠️ No manager found for serviceType: ${user.volunteer.serviceType}`);
+      continue;
     }
+
+    // const message = await gupshup.sendingTextTemplate(
+    //   {
+    //     template: {
+    //       id: 'f6c9b738-735f-4554-8cc4-0d5f0f45daa7',
+    //       params: [
+    //         user.volunteer.name,
+    //         "Thank you for stepping forward...",
+    //         user.volunteer.serviceType,
+    //         manager.username || "Manager",
+    //         manager.phone || "N/A",
+    //         "Please report before 2 PM or as per your slot timing at our Volunteer Reception, located just after the Sri Vaibhava Venkateswara Swamy Temple",
+    //         "📅 Date: 05th July 2025 ( Saturday )",
+    //         "Jagannath Swami Ki "
+    //       ],
+    //     },
+    //     'src.name': 'Production',
+    //     destination: fullNumber,
+    //     source: '917075176108',
+    //   },
+    //   {
+    //     apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+    //   }
+    // );
+        const message1= await gupshup.sendingTextTemplate(
+        {
+          template: {
+            id: 'a497c231-500a-433d-9c97-7b08a767d2b9',
+            params: [
+              user.volunteer.name,
+             "*New WhatsApp group for upcominng Ratha yatra*",
+               "https://chat.whatsapp.com/GNrjN2f5KYn19N7mG8sPl3?mode=ac_t",
+            //   location // fallback if message is empty
+            ],
+          },
+          'src.name': 'Production',
+          destination: fullNumber,
+          source: '917075176108',
+        },
+        {
+          apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+        }
+      );
+
+    console.log(`✅ Sent to ${fullNumber}:`, message1.data);
+    count++;
+    // if (count === 10) break;
+
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+  } catch (err) {
+    console.error(`❌ Error sending to ${user.volunteer.whatsappNumber}:`, err.message);
+  }
+}
 
     console.log(`✅ Total messages sent: ${count}`);
     return res.json({ message: "Messages sent successfully", total: count });
@@ -1472,7 +1498,7 @@ function parseDate(dateStr) {
 }
 
 app.get("/bulk-insert-attendance", async (req, res) => {
-  const filePath = path.join(__dirname,"newFlc.csv");
+  const filePath = path.join(__dirname,"final.csv");
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: "CSV file not found." });
@@ -1538,7 +1564,7 @@ app.get("/bulk-insert-attendance", async (req, res) => {
 });
 app.get('/usersdata',async(req,res)=>{
   try{
-      const users =await Attendance1.find({});
+      const users =await Attendance1.find({status: "Present"});
       return res.status(200).json(users);
   }
   catch(err){
@@ -1625,5 +1651,49 @@ app.post('/manual-flc-attendance', async (req, res) => {
   }
 });
 
+app.get('/usersdata/excel', async (req, res) => {
+  try {
+    const users = await Attendance1.find({ status: "Present" });
 
+    // Create workbook & worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Present Users');
+
+    // Add column headers
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Phone', key: 'phone', width: 15 },
+      { header: 'Status', key: 'status', width: 10 },
+      { header: 'Date', key: 'date', width: 20 }
+    ];
+
+    // Add rows
+    users.forEach(user => {
+      worksheet.addRow({
+        name: user.name,
+        phone: user.phone,
+        status: user.status,
+        date: new Date(user.date).toLocaleString()
+      });
+    });
+
+    // Set response headers
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=PresentUsers.xlsx'
+    );
+
+    // Send the workbook
+    await workbook.xlsx.write(res);
+    res.end();
+
+  } catch (err) {
+    console.error('Error generating Excel:', err);
+    res.status(500).json({ message: 'Failed to generate Excel file' });
+  }
+});
 // Route: GET /api/import-from-local
