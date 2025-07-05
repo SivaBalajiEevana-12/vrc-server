@@ -63,7 +63,7 @@ router.post('/manual-attendance', async (req, res) => {
     }
 
     // Save attendance
-    const attendance = new ManualAttendance({
+    const attendance = new JulyManualAttendance({
       volunteer: volunteerId,
       status
     });
