@@ -23,6 +23,7 @@ const { v4: uuidv4 } = require('uuid');
 const ManualAttendance=require('./models/manual')
 const ExcelJS = require('exceljs');
 const Register = require('./routes/register');
+const Response =require('./models/flcUserdata')
 // const ExcelJS = require('exceljs');
 // const fs = require('fs');
 // const path = require('path');
@@ -1608,7 +1609,7 @@ app.get('/flcattendence/:phone', async (req, res) => {
 
   try {
     // Exclude serviceType field using projection
-    const user = await Attendance1.findOne({ phone });
+    const user = await Response.findOne({ whatsappNumber:phone });
 
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -1628,17 +1629,17 @@ app.post('/manual-flc-attendance', async (req, res) => {
   }
 
   try {
-    const existing = await Attendance1.findById(id);
+    const existing = await Response.findById(id);
 
     if (!existing) {
       return res.status(404).json({ message: "User not found." });
     }
 
-    if (existing.status) {
-      return res.status(409).json({ message: "Attendance already submitted." });
-    }
+    // if (existing.status==='Present') {
+    //   return res.status(409).json({ message: "Attendance already submitted." });
+    // }
 
-    await Attendance1.findByIdAndUpdate(id, {
+    await Response.findByIdAndUpdate(id, {
       status,
       date: new Date(),
     });
@@ -1697,3 +1698,249 @@ app.get('/usersdata/excel', async (req, res) => {
   }
 });
 // Route: GET /api/import-from-local
+
+
+// Data: List of users with phone numbers
+const users1 = [
+  { name: "Kirasani Neelakantam", number: "9441364089" },
+  { name: "Sreedhar Popuri", number: "9391661301" },
+  { name: "Lakshmisrinivas", number: "9959599116" },
+  { name: "Boina Sai Suresh", number: "8143212270" },
+  { name: "Venkata rao", number: "9391158636" },
+  { name: "Jaswanth", number: "7207674579" },
+  { name: "Ekeswaranadh", number: "7675864099" },
+  { name: "S sudharshan reddy", number: "7013309106" },
+  { name: "Surisetty Arudra Arun Kumar", number: "9390540450" },
+  { name: "Bhuvan Rishan", number: "9515690618" },
+  { name: "Babitha", number: "9962942149" },
+  { name: "B V SHYAM", number: "9030406336" },
+  { name: "Kannababu", number: "9490743813" },
+  { name: "Vijay Kumar", number: "9010189470" },
+  { name: "Charan Teja", number: "7901219353" },
+  { name: "Dinesh", number: "8465049121" },
+  { name: "Sathwick Varma", number: "6301799946" },
+  { name: "Aditya", number: "9652378598" },
+  { name: "Omkar", number: "6303542751" },
+  { name: "Dhruv K", number: "9327590531" },
+  { name: "M Mahendar Goud", number: "9705864697" },
+  { name: "Shobitha", number: "6302453806" },
+  { name: "Sukanya", number: "9642488167" },
+  { name: "Burle Ganesh", number: "9398093780" },
+  { name: "P Vishal", number: "9398828390" },
+  { name: "Mounika", number: "6305362713" },
+  { name: "Ch Dithi Sree", number: "9581226962" },
+  { name: "P Shaman Shouri", number: "9581226962" },
+  { name: "Pusarla", number: "8499905307" },
+  { name: "Trinadh", number: "9618787165" },
+  { name: "D Yogesh Kumar", number: "7416316931" },
+  { name: "Kedarnath", number: "7842429145" },
+  { name: "Rella Chakravarthi", number: "7893104624" },
+  { name: "Shiva", number: "9573976275" },
+  { name: "Penaganti Maheshbabu", number: "8639347793" },
+  { name: "K abhiram", number: "9182882588" },
+  { name: "A Sai Saran", number: "8247083451" },
+  { name: "Jayasurya", number: "9391252710" },
+  { name: "Garikina Naveen", number: "9177852817" },
+  { name: "K nikhil kumar", number: "9494246211" },
+  { name: "T s naidu", number: "9963916014" },
+  { name: "D ashwin", number: "9573697826" },
+  { name: "Ravi kiran", number: "9398567417" }
+];
+
+// Message to send
+// const message = "Hello! This is a test message.";
+
+app.get('/send1', async(req, res) => {
+  // await Promise.all(users.map(async user => {
+    let count =0 ;
+    const result=[]
+    const volunteer1 = await Response.find({});
+    for(const user of volunteer1){
+      const existing = await Attendance1.findOne({phone:user.whatsappNumber,status:"Present"});
+      const existing1 = await users1.find(user1=> user1.number === user.whatsappNumber);
+      if(existing || existing1){
+        console.log(`User ${user.name} (${user.whatsappNumber}) already exists in the database.`);
+        continue; // Skip if user already exists      
+      }
+      
+
+    const fullNumber = `91${user.number}`;
+    count++;
+  //   await gupshup.sendingTextTemplate(
+  //   {
+  //     template: {
+  //       id: "e7b1f573-e0ca-4359-b1d5-b77170e15385",
+  //       params: [],
+  //     },
+  //     "src.name": "Production",
+  //     destination: fullNumber,
+  //     source: "917075176108",
+  //   },
+  //   {
+  //     apikey: "zbut4tsg1ouor2jks4umy1d92salxm38",
+  //   }
+  // );
+    result.push(user);
+     console.log(`User ${user.name} (${user.whatsappNumber}) already  in the database.`);
+    // Simulate sending a message (you can integrate real API like Twilio here)
+   
+  // }));
+  }
+  console.log(count);
+  res.send(result);
+});
+app.post('/upload-from-file', async (req, res) => {
+  const filePath = path.join(__dirname, 'Facing Life Challeneges (Responses) - MASTER (4).csv');
+
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'CSV file not found at path', path: filePath });
+  }
+
+  const results = [];
+
+  fs.createReadStream(filePath)
+    .pipe(csv())
+    .on('data', (data) => {
+      results.push({
+        timestamp: new Date(data['Timestamp']),
+        name: data['Name'],
+        whatsappNumber: data['Whatsapp Number'],
+        profession: data['Profession'],
+        organization: data['College / Company Name'],
+        age: parseInt(data['Age']) || null,
+        gender: data['Gender'],
+        location: data['Your Location'],
+        attendance: 'Absent' // default value
+      });
+    })
+    .on('end', async () => {
+      try {
+        const insertedDocs = await Response.insertMany(results);
+        res.status(200).json({
+          message: 'Data successfully uploaded from file',
+          count: insertedDocs.length
+        });
+      } catch (err) {
+        res.status(500).json({ error: 'Database error', details: err });
+      }
+    });
+});
+app.post('/userflc', async (req, res) => {
+  try {
+    const {
+      timestamp,
+      name,
+      whatsappNumber,
+      profession,
+      organization,
+      age,
+      gender,
+      location,
+      attendance = 'Absent'
+    } = req.body;
+
+    const newUser = new Response({
+      timestamp: timestamp ? new Date(timestamp) : new Date(),
+      name,
+      whatsappNumber,
+      profession,
+      organization,
+      age,
+      gender,
+      location,
+      attendance
+    });
+
+    const savedUser = await newUser.save();
+    res.status(201).json({ message: 'User saved successfully', data: savedUser });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to save user', details: err.message });
+  }
+});
+app.get('/1send1', async (req, res) => {
+  try {
+    let count = 0;
+    const result = [];
+
+    const volunteer1 = await Response.find({gender:'Male'});
+
+    for (const user of volunteer1) {
+      const existing = await Attendance1.findOne({
+        phone: user.whatsappNumber,
+        status: 'Present',
+
+      });
+
+      const existing1 = users1.find(
+        (user1) => user1.number === user.whatsappNumber
+      );
+
+      if (existing || existing1) continue;
+
+      count++;
+      result.push(user);
+    }
+
+    // Create Excel workbook and worksheet
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Eligible Users');
+
+    // Define columns
+    worksheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'WhatsApp Number', key: 'whatsappNumber', width: 20 },
+      { header: 'Profession', key: 'profession', width: 20 },
+      { header: 'Organization', key: 'organization', width: 30 },
+      { header: 'Age', key: 'age', width: 10 },
+      { header: 'Gender', key: 'gender', width: 10 },
+      { header: 'Location', key: 'location', width: 25 },
+      { header: 'Attendance', key: 'attendance', width: 10 },
+      { header: 'Timestamp', key: 'timestamp', width: 25 }
+    ];
+
+    // Add data
+    result.forEach(user => {
+      worksheet.addRow({
+        name: user.name,
+        whatsappNumber: user.whatsappNumber,
+        profession: user.profession,
+        organization: user.organization,
+        age: user.age,
+        gender: user.gender,
+        location: user.location,
+        attendance: user.attendance,
+        timestamp: user.timestamp
+      });
+    });
+
+    // Generate Excel file in memory and send
+    res.setHeader(
+      'Content-Type',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename=eligible_users.xlsx'
+    );
+
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error('❌ Error generating Excel:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+app.get('/flcattendence1', async (req, res) => {
+  try{
+    const users = await Response.find({ attendance: "Present" });
+    return res.json(users);
+  }
+  catch(err){
+    console.error("Error fetching users data:", err);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+})
+
+
+

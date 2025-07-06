@@ -76,4 +76,17 @@ router.post('/manual-attendance', async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+router.delete('/siva',async (req,res)=>
+{
+try{
+    const delete1=JulyManualAttendance.deleteMany({});
+    console.log("Deleted all records from JulyManualAttendance",(await delete1).deletedCount);
+    return res.status(200).json({message:"Deleted all records from JulyManualAttendance"});
+}
+catch(err){
+    console.error("Error in delete route",err);
+    return res.status(500).json({message:"Error in Delte",err:err.message})
+}
+}
+)
 module.exports = router;
