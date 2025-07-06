@@ -1639,10 +1639,11 @@ app.post('/manual-flc-attendance', async (req, res) => {
     //   return res.status(409).json({ message: "Attendance already submitted." });
     // }
 
-    await Response.findByIdAndUpdate(id, {
-      status,
-      date: new Date(),
+       await Response.findByIdAndUpdate(id, {
+      attendance: status,
+      timestamp: new Date(),
     });
+
 
     res.status(200).json({ message: "Attendance saved." });
 
