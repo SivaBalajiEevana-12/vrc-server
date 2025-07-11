@@ -173,7 +173,7 @@ app.use('/july',require('./routes/julyattendence'))
 //     console.error("❌ Cron error:", err.message);
 //   }
 // });
-
+app.use('/api',require('./routes/august15'))
 app.post('/user', async (req, res) => {
   try {
     const { age, ...rest } = req.body;
@@ -1751,45 +1751,66 @@ const users1 = [
 // Message to send
 // const message = "Hello! This is a test message.";
 
-app.get('/send1', async(req, res) => {
-  // await Promise.all(users.map(async user => {
-    let count =0 ;
-    const result=[]
-    const volunteer1 = await Response.find({});
-    for(const user of volunteer1){
-      const existing = await Attendance1.findOne({phone:user.whatsappNumber,status:"Present"});
-      const existing1 = await users1.find(user1=> user1.number === user.whatsappNumber);
-      if(existing || existing1){
-        console.log(`User ${user.name} (${user.whatsappNumber}) already exists in the database.`);
-        continue; // Skip if user already exists      
-      }
-      
+app.get('/send1', async (req, res) => {
+  let count = 0;
+  const result = [];
 
-    const fullNumber = `91${user.number}`;
-    count++;
-  //   await gupshup.sendingTextTemplate(
-  //   {
-  //     template: {
-  //       id: "e7b1f573-e0ca-4359-b1d5-b77170e15385",
-  //       params: [],
-  //     },
-  //     "src.name": "Production",
-  //     destination: fullNumber,
-  //     source: "917075176108",
-  //   },
-  //   {
-  //     apikey: "zbut4tsg1ouor2jks4umy1d92salxm38",
-  //   }
-  // );
-    result.push(user);
-     console.log(`User ${user.name} (${user.whatsappNumber}) already  in the database.`);
-    // Simulate sending a message (you can integrate real API like Twilio here)
-   
-  // }));
+  try {
+    const volunteer1 = await Response.find({gender:'Male'});
+
+    for (const user of volunteer1) {
+      const phone = user.whatsappNumber?.trim();
+
+      // Check if this user already has status: "Present" in Attendance1
+      const existing = await Attendance1.findOne({  phone, status: "Present" });
+ const existing1 = users1.find(
+        (user1) => user1.number?.trim() === phone
+      );
+
+      if (existing || existing1) {
+        console.log(`❌ Skipping ${user.name} (${phone}) - already present or in users1`);
+        continue; // Skip sending
+      }
+
+      // Build full number and add to result
+      const fullNumber = `91${phone}`;
+      console.log('hello')
+      count++;
+       const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: 'e7b1f573-e0ca-4359-b1d5-b77170e15385',
+          params: [],
+        },
+        'src.name': 'Production',
+        destination: fullNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
+      // Optionally send message here
+      // await gupshup.sendingTextTemplate({...});
+
+      console.log(`✅ Sending to ${user.name} (${phone}) message:${message.data}`);
+      result.push({
+        name: user.name,
+        phone,
+        organization: user.organization,
+        location: user.location
+      });
+    }
+
+    console.log("Total messages to be sent:", count);
+    res.json({ count, result });
+
+  } catch (err) {
+    console.error("Error in /send1:", err);
+    res.status(500).json({ message: "Internal Server Error" });
   }
-  console.log(count);
-  res.send(result);
 });
+
 app.post('/upload-from-file', async (req, res) => {
   const filePath = path.join(__dirname, 'Facing Life Challeneges (Responses) - MASTER (4).csv');
 
