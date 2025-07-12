@@ -4,6 +4,7 @@ const crypto = require('crypto');
 // const razorpay = require('razorpay'); // <-- Replace with your actual Razorpay instance
 const Candidate = require('../models/candidate');
 const Razorpay = require('razorpay');
+const gupshup=require('@api/gupshup');
 
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -75,24 +76,22 @@ router.post("/verify-payment", async (req, res) => {
     await newCandidate.save();
     console.log(newCandidate);
 
-    // Send WhatsApp Message via Gupshup
-    // gupshup.sendingTextTemplate({
-    //   template: {
-    //     id: '3439dc99-4784-4733-9038-f810b98df077',
-    //     params: [newCandidate.name, "https://chat.whatsapp.com/BgKZOANIvI0JSuBWStpyf2"]
-    //   },
-    //   'src.name': 'Production',
-    //   destination: normalizedNumber,
-    //   source: '917075176108',
-    // }, {
-    //   apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38'
-    // }).then(({ data }) => {
-    //   console.log("WhatsApp message sent:", data);
-    //   res.status(200).json({ status: "success", message: "Payment verified and candidate registered" });
-    // }).catch(err => {
-    //   console.error("Gupshup error:", err.response?.data || err);
-    //   res.status(500).json({ status: "error", message: "Payment saved, but WhatsApp failed" });
-    // });
+  
+    const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          params: [newCandidate.name],
+        },
+        'src.name': 'Production',
+        destination: normalizedNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
+    console.log(message.data);
 
   } catch (err) {
     console.error("Error saving candidate:", err);
@@ -108,6 +107,79 @@ router.get('/data', async (req, res) => {
     res.status(500).json({ status: "error", message: "Failed to fetch data" });
   }
 });
+// Mark attendance by WhatsApp number
+router.post("/attendance/:phone", async (req, res) => {
+  try {
+    const phone = "91" + req.params.phone;
+
+    const candidate = await Candidate.findOne({ whatsappNumber: phone });
+
+    if (!candidate) {
+      return res.status(404).json({ status: "error", message: "Candidate not found" });
+    }
+
+    if (candidate.attendance) {
+      return res.status(200).json({ status: "info", message: "Already marked as attended" });
+    }
+
+    candidate.attendance = true;
+    await candidate.save();
+
+    res.status(200).json({ status: "success", message: "Attendance marked successfully" });
+  } catch (err) {
+    console.error("Error marking attendance:", err);
+    res.status(500).json({ status: "error", message: "Failed to mark attendance" });
+  }
+});
+// POST /mark-attendance
+router.post("/mark-attendance", async (req, res) => {
+  const { whatsappNumber } = req.body;
+  const fullNumber = "91" + whatsappNumber;
+
+  try {
+    const candidate = await Candidate.findOneAndUpdate(
+      { whatsappNumber: fullNumber },
+      { attendance: true },
+      { new: true }
+    );
+
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
+        const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          params: [candidate.name],
+        },
+        'src.name': 'Production',
+        destination: fullNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
+    console.log(message.data);
+
+    res.json({ status: "success", name: candidate.name });
+  } catch (err) {
+    console.error("Attendance marking error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+// GET all candidates who have marked attendance
+router.get("/attendance-list", async (req, res) => {
+  try {
+    const attendedCandidates = await Candidate.find({ attendance: true });
+    res.status(200).json(attendedCandidates);
+  } catch (err) {
+    console.error("Error fetching attendance list:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+
 
 
 module.exports = router;

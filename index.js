@@ -42,6 +42,7 @@ cloudinary.config({
   api_secret: 'RC506MY4qn6DV5shRvYOmvBXIOc'
 });
 app.use('/register',Register);
+app.use('/college',require('./routes/college'))
 app.use('/july',require('./routes/julyattendence'))
 // const sendReminder = async (event, type) => {
 //   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
@@ -1963,6 +1964,52 @@ app.get('/flcattendence1', async (req, res) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 })
+const Candidate= require('./models/candidate');
+const dayjs=require('dayjs')
+const EVENT_DATE = dayjs("2025-08-15T09:00:00");
+// const EVENT_DATE = dayjs("2025-08-15T09:00:00");
 
+const sendMessage = async (candidate, label) => {
+  console.log(`[${new Date().toISOString()}] Sending ${label} reminder to ${candidate.name} (${candidate.whatsappNumber})`);
+};
 
+const checkAndSendReminders = async () => {
+  console.log(`[${new Date().toISOString()}] Running reminder check...`);
 
+  const now = dayjs();
+  const candidates = await Candidate.find();
+
+  for (let candidate of candidates) {
+    const diff = EVENT_DATE.diff(now, "millisecond");
+
+    const reminders = [
+      { label: "threeDay", offset: 3 * 24 * 60 * 60 * 1000 },
+      { label: "twoDay", offset: 2 * 24 * 60 * 60 * 1000 },
+      { label: "oneDay", offset: 1 * 24 * 60 * 60 * 1000 },
+      { label: "twoHour", offset: 2 * 60 * 60 * 1000 },
+    ];
+
+    for (const { label, offset } of reminders) {
+      const alreadySent = candidate.remindersSent?.[label];
+      const withinRange = Math.abs(diff - offset) < 5 * 60 * 1000;
+
+      if (!alreadySent && withinRange) {
+        console.log(`[${new Date().toISOString()}] Reminder due for ${candidate.name} (${label})`);
+        await sendMessage(candidate, label);
+        candidate.remindersSent[label] = true;
+      }
+    }
+
+    await candidate.save();
+  }
+
+  console.log(`[${new Date().toISOString()}] Reminder check completed.`);
+};
+
+// Run every 10 minutes
+cron.schedule("*/1 * * * *", () => {
+  console.log(`[${new Date().toISOString()}] Cron job triggered.`);
+  checkAndSendReminders();
+});
+
+console.log("✅ Reminder cron job scheduled.");
