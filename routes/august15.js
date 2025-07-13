@@ -93,7 +93,7 @@ const newCandidate = new Candidate({
       }
     );
     console.log(message.data);
-    return res.redirect("https://youthfest.harekrishnavizag.org/thankyou");
+   res.redirect("https://youthfest.harekrishnavizag.org/thankyou");
 
   } catch (err) {
     console.error("Error saving candidate:", err);
