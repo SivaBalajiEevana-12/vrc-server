@@ -81,7 +81,7 @@ const newCandidate = new Candidate({
     const message = await gupshup.sendingTextTemplate(
       {
         template: {
-          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          id: 'e8e01177-f2c1-46a0-b4d6-299a3c4e2078',
           params: [newCandidate.name],
         },
         'src.name': 'Production',
@@ -93,7 +93,7 @@ const newCandidate = new Candidate({
       }
     );
     console.log(message.data);
-    return res.json({message:"success"})
+    return res.redirect("https://youthfest.harekrishnavizag.org/thankyou");
 
   } catch (err) {
     console.error("Error saving candidate:", err);
