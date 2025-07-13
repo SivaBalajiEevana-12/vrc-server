@@ -92,10 +92,11 @@ router.post("/verify-payment", async (req, res) => {
       }
     );
     console.log(message.data);
+    return res.json({message:"success"})
 
   } catch (err) {
     console.error("Error saving candidate:", err);
-    res.status(500).json({ status: "error", message: "Registration failed" });
+    return res.status(500).json({ status: "error", message: "Registration failed" });
   }
 });
 router.get('/data', async (req, res) => {
@@ -178,6 +179,11 @@ router.get("/attendance-list", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+router.delete('/asm',async(req,res)=>{
+  const del= await Candidate.deleteMany({});
+  console.log(del.deletedCount);
+  return res.json({data:del.deletedCount});
+})
 
 
 
