@@ -52,26 +52,27 @@ router.post("/verify-payment", async (req, res) => {
   try {
     const normalizedNumber = "91" + formData.whatsappNumber;
 
-    const newCandidate = new Candidate({
-      serialNo: formData.serialNo,
-      name: formData.name,
-      gender: formData.gender,
-      college: formData.collegeName,
-      course: formData.course,
-      year: formData.year,
-      dob: new Date(formData.dob),
-      registrationDate: new Date(), // default to now
-      whatsappNumber: normalizedNumber,
+const newCandidate = new Candidate({
+  serialNo: formData.serialNo,
+  name: formData.name.trim(),
+  gender: formData.gender,
+  college: formData.collegeName,
+  course: formData.course,
+  year: parseInt(formData.year, 10), // <- converted to number
+  dob: new Date(formData.dob),
+  registrationDate: new Date(),
 
-      // Payment fields
-      paymentStatus: "Paid",
-      paymentId: razorpay_payment_id,
-      orderId: razorpay_order_id,
-      paymentAmount: parseFloat(formData.amount), // paise or rupees — ensure consistency
-      paymentDate: new Date(),
-      paymentMethod: formData.paymentMethod || "Online", // optional
-      receipt: formData.receipt || `receipt_${Date.now()}`
-    });
+  whatsappNumber: normalizedNumber,
+
+  paymentStatus: "Paid",
+  paymentId: razorpay_payment_id,
+  orderId: razorpay_order_id,
+  paymentAmount: parseFloat(formData.amount),
+  paymentDate: new Date(),
+  paymentMethod: formData.paymentMethod || "Online",
+  receipt: formData.receipt || `receipt_${Date.now()}`
+});
+
 
     await newCandidate.save();
     console.log(newCandidate);

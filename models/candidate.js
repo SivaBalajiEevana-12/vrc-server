@@ -2,14 +2,17 @@
 
 const candidateSchema = new mongoose.Schema({
   serialNo: { type: Number },
-  name: { type: String, required: true },
-  gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
-  college: { type: String, required: true },
-  course: { type: String, required: true },
-  year: { type: Number, required: true },
+  name: { type: String,  },
+  gender: { type: String, enum: ['Male', 'Female', 'Other'],  },
+  college: { type: String,  },
+  course: { type: String,  },
+    companyName: { type: String }, // ✅ NEW (optional, required only for Working)
+      collegeOrWorking: { type: String, enum: ['College', 'Working'],  }, 
+      email: { type: String,  },
+  year: { type: Number,  },
   dob: { type: Date },
   registrationDate: { type: Date, default: Date.now },
-  whatsappNumber: { type: String, required: true },
+  whatsappNumber: { type: String,  required:true},
 
   // Razorpay payment fields
   paymentStatus: {
