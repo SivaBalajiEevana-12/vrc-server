@@ -215,7 +215,56 @@ router.get("/verify-payment/:id", async (req, res) => {
     return res.status(500).json({ success: false, message: "Error verifying payment ID" });
   }
 });
+const PDFDocument = require('pdfkit');
+router.get('/download-receipt/:id', async (req, res) => {
+  const { id: paymentId } = req.params;
 
+  try {
+    const candidate = await Candidate.findOne({ paymentId });
+
+    if (!candidate) {
+      return res.status(404).json({ success: false, message: "Candidate not found" });
+    }
+
+    // Set headers for file download
+    res.setHeader('Content-Disposition', `attachment; filename=receipt_${candidate.serialNo}.pdf`);
+    res.setHeader('Content-Type', 'application/pdf');
+
+    const doc = new PDFDocument();
+
+    doc.pipe(res);
+
+    doc.fontSize(20).text('Krishna Pulse Youth Fest 2024', { align: 'center' });
+    doc.moveDown();
+
+    doc.fontSize(14).text(`🧾 Payment Receipt`, { underline: true });
+    doc.moveDown();
+
+    doc.fontSize(12).text(`Receipt No: ${candidate.receipt}`);
+    doc.text(`Name: ${candidate.name}`);
+    doc.text(`Gender: ${candidate.gender}`);
+    doc.text(`College: ${candidate.college}`);
+    doc.text(`Course: ${candidate.course}`);
+    doc.text(`Year: ${candidate.year}`);
+    doc.text(`Date of Birth: ${candidate.dob.toDateString()}`);
+    doc.text(`Registration Date: ${candidate.registrationDate.toDateString()}`);
+    doc.moveDown();
+
+    doc.text(`📞 WhatsApp: ${candidate.whatsappNumber}`);
+    doc.text(`💰 Amount Paid: ₹${candidate.paymentAmount}`);
+    doc.text(`Payment ID: ${candidate.paymentId}`);
+    doc.text(`Order ID: ${candidate.orderId}`);
+    doc.text(`Payment Date: ${candidate.paymentDate.toDateString()}`);
+    doc.text(`Method: ${candidate.paymentMethod}`);
+    doc.moveDown();
+
+    doc.text(`✅ Status: ${candidate.paymentStatus}`, { color: 'green' });
+    doc.end();
+  } catch (err) {
+    console.error("Receipt generation error:", err.message);
+    res.status(500).json({ success: false, message: "Error generating receipt" });
+  }
+});
 
 
 
