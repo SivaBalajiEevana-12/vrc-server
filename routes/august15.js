@@ -6,275 +6,311 @@ const Candidate = require('../models/candidate');
 const Razorpay = require('razorpay');
 const gupshup=require('@api/gupshup');
 
+
 const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID,
-  key_secret: process.env.RAZORPAY_KEY_SECRET,
+ key_id: process.env.RAZORPAY_KEY_ID,
+ key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 // Your Mongoose model
 // const gupshup = require('./gupshup'); // Assuming you have a wrapper for Gupshup
 // Create Razorpay order
 router.post("/create-order", async (req, res) => {
-  const { amount } = req.body;
+ const { amount } = req.body;
 
-  const options = {
-    amount, // in paise
-    currency: "INR",
-    receipt: `receipt_${Date.now()}`
-  };
 
-  try {
-    const order = await razorpay.orders.create(options);
-    res.json(order);
-  } catch (err) {
-    console.error("Error creating order:", err);
-    res.status(500).json({ status: "error", message: "Failed to create order" });
-  }
+ const options = {
+   amount, // in paise
+   currency: "INR",
+   receipt: `receipt_${Date.now()}`
+ };
+
+
+ try {
+   const order = await razorpay.orders.create(options);
+   res.json(order);
+ } catch (err) {
+   console.error("Error creating order:", err);
+   res.status(500).json({ status: "error", message: "Failed to create order" });
+ }
 });
+
 
 // Verify payment and save candidate
 router.post("/verify-payment", async (req, res) => {
-  const {
-    razorpay_order_id,
-    razorpay_payment_id,
-    razorpay_signature,
-    formData,
-  } = req.body;
+ const {
+   razorpay_order_id,
+   razorpay_payment_id,
+   razorpay_signature,
+   formData,
+ } = req.body;
 
-  // Signature Verification
-  console.log(razorpay_order_id,razorpay_signature,razorpay_payment_id)
-  const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
-  hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
-  const generated_signature = hmac.digest("hex");
-  console.log(razorpay_signature,generated_signature)
-  if (generated_signature !== razorpay_signature) {
-    return res.status(400).json({ status: "fail", message: "Payment verification failed" });
-  }
 
-  try {
-    const normalizedNumber = "91" + formData.whatsappNumber;
+ // Signature Verification
+ console.log(razorpay_order_id,razorpay_signature,razorpay_payment_id)
+ const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
+ hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
+ const generated_signature = hmac.digest("hex");
+ console.log(razorpay_signature,generated_signature)
+ if (generated_signature !== razorpay_signature) {
+   return res.status(400).json({ status: "fail", message: "Payment verification failed" });
+ }
+
+
+ try {
+   const normalizedNumber = "91" + formData.whatsappNumber;
+
 
 const newCandidate = new Candidate({
-  serialNo: formData.serialNo,
-  name: formData.name.trim(),
-  gender: formData.gender,
-  college: formData.college,
-  course: formData.course,
-  year: formData.year, // <- converted to number
-  dob: new Date(formData.dob),
-  registrationDate: new Date(),
-  collegeOrWorking:formData.CollegeOrWorking,
-  whatsappNumber: normalizedNumber,
-
-  paymentStatus: "Paid",
-  paymentId: razorpay_payment_id,
-  orderId: razorpay_order_id,
-  paymentAmount: parseFloat(formData.amount),
-  paymentDate: new Date(),
-  paymentMethod: formData.paymentMethod || "Online",
-  receipt: formData.receipt || `receipt_${Date.now()}`
+ serialNo: formData.serialNo,
+ name: formData.name.trim(),
+ gender: formData.gender,
+ college: formData.college,
+ course: formData.course,
+ year: formData.year, // <- converted to number
+ dob: new Date(formData.dob),
+ registrationDate: new Date(),
+ collegeOrWorking:formData.CollegeOrWorking,
+ whatsappNumber: normalizedNumber,
+ slot:formData.slot,
+ paymentStatus: "Paid",
+ paymentId: razorpay_payment_id,
+ orderId: razorpay_order_id,
+ paymentAmount: parseFloat(formData.amount),
+ paymentDate: new Date(),
+ paymentMethod: formData.paymentMethod || "Online",
+ receipt: formData.receipt || `receipt_${Date.now()}`
 });
 
 
-    await newCandidate.save();
-    console.log(newCandidate);
 
-  
+
+   await newCandidate.save();
+   console.log(newCandidate);
+
+
     const message = await gupshup.sendingTextTemplate(
-      {
-        template: {
-          id: '8d7d1fff-0543-4a4f-bc33-886bb0aa1fef',
-          params: [newCandidate.name],
-        },
-        'src.name': 'Production',
-        destination: normalizedNumber,
-        source: '917075176108',
-      },
-      {
-        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-      }
-    );
-    console.log(message.data);
-   return res.json({message:"success"})
+     {
+       template: {
+         id: '8d7d1fff-0543-4a4f-bc33-886bb0aa1fef',
+         params: [newCandidate.name],
+       },
+       'src.name': 'Production',
+       destination: normalizedNumber,
+       source: '917075176108',
+     },
+     {
+       apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+     }
+   );
+   console.log(message.data);
+  return res.json({message:"success"})
 
-  } catch (err) {
-    console.error("Error saving candidate:", err);
-    return res.status(500).json({ status: "error", message: "Registration failed" });
-  }
+
+ } catch (err) {
+   console.error("Error saving candidate:", err);
+   return res.status(500).json({ status: "error", message: "Registration failed" });
+ }
 });
 router.get('/data', async (req, res) => {
-  try {
-    const data = await Candidate.find();
-    res.status(200).json(data);
-  } catch (err) {
-    console.error("Error fetching candidate data:", err);
-    res.status(500).json({ status: "error", message: "Failed to fetch data" });
-  }
+ try {
+   const data = await Candidate.find();
+   res.status(200).json(data);
+ } catch (err) {
+   console.error("Error fetching candidate data:", err);
+   res.status(500).json({ status: "error", message: "Failed to fetch data" });
+ }
 });
 // Mark attendance by WhatsApp number
 router.post("/attendance/:phone", async (req, res) => {
-  try {
-    const phone = "91" + req.params.phone;
+ try {
+   const phone = "91" + req.params.phone;
 
-    const candidate = await Candidate.findOne({ whatsappNumber: phone });
 
-    if (!candidate) {
-      return res.status(404).json({ status: "error", message: "Candidate not found" });
-    }
+   const candidate = await Candidate.findOne({ whatsappNumber: phone });
 
-    if (candidate.attendance) {
-      return res.status(200).json({ status: "info", message: "Already marked as attended" });
-    }
 
-    candidate.attendance = true;
-    await candidate.save();
+   if (!candidate) {
+     return res.status(404).json({ status: "error", message: "Candidate not found" });
+   }
 
-    res.status(200).json({ status: "success", message: "Attendance marked successfully" });
-  } catch (err) {
-    console.error("Error marking attendance:", err);
-    res.status(500).json({ status: "error", message: "Failed to mark attendance" });
-  }
+
+   if (candidate.attendance) {
+     return res.status(200).json({ status: "info", message: "Already marked as attended" });
+   }
+
+
+   candidate.attendance = true;
+   await candidate.save();
+
+
+   res.status(200).json({ status: "success", message: "Attendance marked successfully" });
+ } catch (err) {
+   console.error("Error marking attendance:", err);
+   res.status(500).json({ status: "error", message: "Failed to mark attendance" });
+ }
 });
 // POST /mark-attendance
 router.post("/mark-attendance", async (req, res) => {
-  const { whatsappNumber } = req.body;
-  const fullNumber = "91" + whatsappNumber;
+ const { whatsappNumber } = req.body;
+ const fullNumber = "91" + whatsappNumber;
 
-  try {
-    const candidate = await Candidate.findOneAndUpdate(
-      { whatsappNumber: fullNumber },
-      { attendance: true },
-      { new: true }
-    );
 
-    if (!candidate) {
-      return res.status(404).json({ message: "Candidate not found" });
-    }
-        const message = await gupshup.sendingTextTemplate(
-      {
-        template: {
-          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
-          params: [candidate.name],
-        },
-        'src.name': 'Production',
-        destination: fullNumber,
-        source: '917075176108',
-      },
-      {
-        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-      }
-    );
-    console.log(message.data);
+ try {
+   const candidate = await Candidate.findOneAndUpdate(
+     { whatsappNumber: fullNumber },
+     { attendance: true },
+     { new: true }
+   );
 
-    res.json({ status: "success", name: candidate.name });
-  } catch (err) {
-    console.error("Attendance marking error:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+
+   if (!candidate) {
+     return res.status(404).json({ message: "Candidate not found" });
+   }
+       const message = await gupshup.sendingTextTemplate(
+     {
+       template: {
+         id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+         params: [candidate.name],
+       },
+       'src.name': 'Production',
+       destination: fullNumber,
+       source: '917075176108',
+     },
+     {
+       apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+     }
+   );
+   console.log(message.data);
+
+
+   res.json({ status: "success", name: candidate.name });
+ } catch (err) {
+   console.error("Attendance marking error:", err);
+   res.status(500).json({ message: "Server error" });
+ }
 });
 // GET all candidates who have marked attendance
 router.get("/attendance-list", async (req, res) => {
-  try {
-    const attendedCandidates = await Candidate.find({ attendance: true });
-    res.status(200).json(attendedCandidates);
-  } catch (err) {
-    console.error("Error fetching attendance list:", err);
-    res.status(500).json({ message: "Server error" });
-  }
+ try {
+   const attendedCandidates = await Candidate.find({ attendance: true });
+   res.status(200).json(attendedCandidates);
+ } catch (err) {
+   console.error("Error fetching attendance list:", err);
+   res.status(500).json({ message: "Server error" });
+ }
 });
 router.delete('/asm',async(req,res)=>{
-  const del= await Candidate.deleteMany({});
-  console.log(del.deletedCount);
-  return res.json({data:del.deletedCount});
+ const del= await Candidate.deleteMany({});
+ console.log(del.deletedCount);
+ return res.json({data:del.deletedCount});
 })
 // GET /verify-payment/:id — Validate payment ID
 router.get("/verify-payment/:id", async (req, res) => {
-  const { id: paymentId } = req.params;
+ const { id: paymentId } = req.params;
 
-  try {
-    // Fetch payment from Razorpay
-    // const payment = await razorpay.payments.fetch(paymentId);
 
-    // // Check status
-    // if (payment && payment.status === "captured") {
-      // Optional: Cross-check that this paymentId exists in your database too
-      const candidate = await Candidate.findOne({ paymentId });
-      if (!candidate) {
-        return res.status(404).json({ success: false, message: "No matching candidate found for this payment ID." });
-      }
+ try {
+   // Fetch payment from Razorpay
+   // const payment = await razorpay.payments.fetch(paymentId);
 
-      return res.status(200).json({
-        success: true,
-        message: "Payment verified",
-        candidate,
-      });
-    // else {
-    //   return res.status(400).json({ success: false, message: "Payment not captured or invalid." });
-    // }
-  } catch (err) {
-    console.error("Payment fetch failed:", err.message);
-    return res.status(500).json({ success: false, message: "Error verifying payment ID" });
-  }
+
+   // // Check status
+   // if (payment && payment.status === "captured") {
+     // Optional: Cross-check that this paymentId exists in your database too
+     const candidate = await Candidate.findOne({ paymentId });
+     if (!candidate) {
+       return res.status(404).json({ success: false, message: "No matching candidate found for this payment ID." });
+     }
+
+
+     return res.status(200).json({
+       success: true,
+       message: "Payment verified",
+       candidate,
+     });
+   // else {
+   //   return res.status(400).json({ success: false, message: "Payment not captured or invalid." });
+   // }
+ } catch (err) {
+   console.error("Payment fetch failed:", err.message);
+   return res.status(500).json({ success: false, message: "Error verifying payment ID" });
+ }
 });
 const PDFDocument = require('pdfkit');
 router.get('/download-receipt/:id', async (req, res) => {
-  const { id: paymentId } = req.params;
+ const { id: paymentId } = req.params;
 
-  try {
-    const candidate = await Candidate.findOne({ paymentId });
 
-    if (!candidate) {
-      return res.status(404).json({ success: false, message: "Candidate not found" });
-    }
+ try {
+   const candidate = await Candidate.findOne({ paymentId });
 
-    // Set headers for file download
-    res.setHeader('Content-Disposition', `attachment; filename=receipt_${candidate.serialNo}.pdf`);
-    res.setHeader('Content-Type', 'application/pdf');
 
-    const PDFDocument = require('pdfkit');
-    const doc = new PDFDocument();
+   if (!candidate) {
+     return res.status(404).json({ success: false, message: "Candidate not found" });
+   }
 
-    doc.pipe(res);
 
-    // Title
-    doc.fillColor('blue').fontSize(20).text('Krishna Pulse Youth Fest 2024', { align: 'center' });
-    doc.moveDown();
+   // Set headers for file download
+   res.setHeader('Content-Disposition', `attachment; filename=receipt_${candidate.serialNo}.pdf`);
+   res.setHeader('Content-Type', 'application/pdf');
 
-    // Section Title - Blue
-    doc.fillColor('blue').fontSize(14).text('Payment Receipt', { underline: true });
-    doc.moveDown();
 
-    // Receipt & Personal Details
-    doc.fontSize(12).fillColor('blue');
-    doc.text(`Receipt No: ${candidate.receipt}`);
-    doc.text(`Name: ${candidate.name}`);
-    doc.text(`Gender: ${candidate.gender}`);
-    doc.text(`College: ${candidate.college || 'N/A'}`);
-    doc.text(`Course: ${candidate.course || 'N/A'}`);
-    doc.text(`Year: ${candidate.year || 'N/A'}`);
-    doc.text(`Date of Birth: ${candidate.dob.toDateString()}`);
-    doc.text(`Registration Date: ${candidate.registrationDate.toDateString()}`);
-    doc.moveDown();
+   const PDFDocument = require('pdfkit');
+   const doc = new PDFDocument();
 
-    // Contact & Payment Info
-    doc.text(`WhatsApp: ${candidate.whatsappNumber}`);
-    doc.text(`Amount Paid: ₹${candidate.paymentAmount}`);
-    doc.text(`Payment ID: ${candidate.paymentId}`);
-    doc.text(`Order ID: ${candidate.orderId}`);
-    doc.text(`Payment Date: ${candidate.paymentDate.toDateString()}`);
-    doc.text(`Method: ${candidate.paymentMethod}`);
-    doc.moveDown();
 
-    // ✅ Status - Green
-    doc.fillColor('green').text(`Status: ${candidate.paymentStatus}`);
+   doc.pipe(res);
 
-    doc.end();
-  } catch (err) {
-    console.error("Receipt generation error:", err.message);
-    res.status(500).json({ success: false, message: "Error generating receipt" });
-  }
+
+   // Title
+   doc.fillColor('blue').fontSize(20).text('Krishna Pulse Youth Fest 2024', { align: 'center' });
+   doc.moveDown();
+
+
+   // Section Title - Blue
+   doc.fillColor('blue').fontSize(14).text('Payment Receipt', { underline: true });
+   doc.moveDown();
+
+
+   // Receipt & Personal Details
+   doc.fontSize(12).fillColor('blue');
+   doc.text(`Receipt No: ${candidate.receipt}`);
+   doc.text(`Name: ${candidate.name}`);
+   doc.text(`Slot: ${candidate.slot}`);
+   doc.text(`Gender: ${candidate.gender}`);
+   doc.text(`College: ${candidate.college || 'N/A'}`);
+   doc.text(`Course: ${candidate.course || 'N/A'}`);
+   doc.text(`Year: ${candidate.year || 'N/A'}`);
+   doc.text(`Date of Birth: ${candidate.dob.toDateString()}`);
+   doc.text(`Registration Date: ${candidate.registrationDate.toDateString()}`);
+   doc.moveDown();
+
+
+   // Contact & Payment Info
+   doc.text(`WhatsApp: ${candidate.whatsappNumber}`);
+   doc.text(`Amount Paid: ₹${candidate.paymentAmount}`);
+   doc.text(`Payment ID: ${candidate.paymentId}`);
+   doc.text(`Order ID: ${candidate.orderId}`);
+   doc.text(`Payment Date: ${candidate.paymentDate.toDateString()}`);
+   doc.text(`Method: ${candidate.paymentMethod}`);
+   doc.moveDown();
+
+
+   // ✅ Status - Green
+   doc.fillColor('green').text(`Status: ${candidate.paymentStatus}`);
+
+
+   doc.end();
+ } catch (err) {
+   console.error("Receipt generation error:", err.message);
+   res.status(500).json({ success: false, message: "Error generating receipt" });
+ }
 });
 
 
 
 
 module.exports = router;
+
+
+

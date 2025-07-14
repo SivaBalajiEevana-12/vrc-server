@@ -13,6 +13,7 @@ const candidateSchema = new mongoose.Schema({
   dob: { type: Date },
   registrationDate: { type: Date, default: Date.now },
   whatsappNumber: { type: String,  required:true},
+  slot:{type:String},
 
   // Razorpay payment fields
   paymentStatus: {
