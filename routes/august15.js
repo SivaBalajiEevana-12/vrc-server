@@ -41,10 +41,11 @@ router.post("/verify-payment", async (req, res) => {
   } = req.body;
 
   // Signature Verification
+  console.log(razorpay_order_id,razorpay_signature,razorpay_payment_id)
   const hmac = crypto.createHmac("sha256", process.env.RAZORPAY_KEY_SECRET);
   hmac.update(`${razorpay_order_id}|${razorpay_payment_id}`);
   const generated_signature = hmac.digest("hex");
-
+  console.log(razorpay_signature,generated_signature)
   if (generated_signature !== razorpay_signature) {
     return res.status(400).json({ status: "fail", message: "Payment verification failed" });
   }
@@ -58,7 +59,7 @@ const newCandidate = new Candidate({
   gender: formData.gender,
   college: formData.collegeName,
   course: formData.course,
-  year: parseInt(formData.year, 10), // <- converted to number
+  year: formData.year, // <- converted to number
   dob: new Date(formData.dob),
   registrationDate: new Date(),
 

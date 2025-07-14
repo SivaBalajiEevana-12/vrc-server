@@ -9,7 +9,7 @@ const candidateSchema = new mongoose.Schema({
     companyName: { type: String }, // ✅ NEW (optional, required only for Working)
       collegeOrWorking: { type: String, enum: ['College', 'Working'],  }, 
       email: { type: String,  },
-  year: { type: Number,  },
+  year: { type: String,  },
   dob: { type: Date },
   registrationDate: { type: Date, default: Date.now },
   whatsappNumber: { type: String,  required:true},
