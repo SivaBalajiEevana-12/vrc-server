@@ -57,12 +57,12 @@ const newCandidate = new Candidate({
   serialNo: formData.serialNo,
   name: formData.name.trim(),
   gender: formData.gender,
-  college: formData.collegeName,
+  college: formData.college,
   course: formData.course,
   year: formData.year, // <- converted to number
   dob: new Date(formData.dob),
   registrationDate: new Date(),
-
+  collegeOrWorking:formData.CollegeOrWorking,
   whatsappNumber: normalizedNumber,
 
   paymentStatus: "Paid",
