@@ -82,7 +82,7 @@ const newCandidate = new Candidate({
     const message = await gupshup.sendingTextTemplate(
       {
         template: {
-          id: 'e8e01177-f2c1-46a0-b4d6-299a3c4e2078',
+          id: '8d7d1fff-0543-4a4f-bc33-886bb0aa1fef',
           params: [newCandidate.name],
         },
         'src.name': 'Production',
