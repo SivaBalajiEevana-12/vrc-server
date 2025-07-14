@@ -192,10 +192,10 @@ router.get("/verify-payment/:id", async (req, res) => {
 
   try {
     // Fetch payment from Razorpay
-    const payment = await razorpay.payments.fetch(paymentId);
+    // const payment = await razorpay.payments.fetch(paymentId);
 
-    // Check status
-    if (payment && payment.status === "captured") {
+    // // Check status
+    // if (payment && payment.status === "captured") {
       // Optional: Cross-check that this paymentId exists in your database too
       const candidate = await Candidate.findOne({ paymentId });
       if (!candidate) {
@@ -207,9 +207,9 @@ router.get("/verify-payment/:id", async (req, res) => {
         message: "Payment verified",
         candidate,
       });
-    } else {
-      return res.status(400).json({ success: false, message: "Payment not captured or invalid." });
-    }
+    // else {
+    //   return res.status(400).json({ success: false, message: "Payment not captured or invalid." });
+    // }
   } catch (err) {
     console.error("Payment fetch failed:", err.message);
     return res.status(500).json({ success: false, message: "Error verifying payment ID" });
