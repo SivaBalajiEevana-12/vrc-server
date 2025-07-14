@@ -186,6 +186,35 @@ router.delete('/asm',async(req,res)=>{
   console.log(del.deletedCount);
   return res.json({data:del.deletedCount});
 })
+// GET /verify-payment/:id — Validate payment ID
+router.get("/verify-payment/:id", async (req, res) => {
+  const { id: paymentId } = req.params;
+
+  try {
+    // Fetch payment from Razorpay
+    const payment = await razorpay.payments.fetch(paymentId);
+
+    // Check status
+    if (payment && payment.status === "captured") {
+      // Optional: Cross-check that this paymentId exists in your database too
+      const candidate = await Candidate.findOne({ paymentId });
+      if (!candidate) {
+        return res.status(404).json({ success: false, message: "No matching candidate found for this payment ID." });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: "Payment verified",
+        candidate,
+      });
+    } else {
+      return res.status(400).json({ success: false, message: "Payment not captured or invalid." });
+    }
+  } catch (err) {
+    console.error("Payment fetch failed:", err.message);
+    return res.status(500).json({ success: false, message: "Error verifying payment ID" });
+  }
+});
 
 
 
