@@ -230,41 +230,50 @@ router.get('/download-receipt/:id', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename=receipt_${candidate.serialNo}.pdf`);
     res.setHeader('Content-Type', 'application/pdf');
 
+    const PDFDocument = require('pdfkit');
     const doc = new PDFDocument();
 
     doc.pipe(res);
 
-    doc.fontSize(20).text('Krishna Pulse Youth Fest 2024', { align: 'center' });
+    // Title
+    doc.fillColor('blue').fontSize(20).text('Krishna Pulse Youth Fest 2024', { align: 'center' });
     doc.moveDown();
 
-    doc.fontSize(14).text(`🧾 Payment Receipt`, { underline: true });
+    // Section Title - Blue
+    doc.fillColor('blue').fontSize(14).text('Payment Receipt', { underline: true });
     doc.moveDown();
 
-    doc.fontSize(12).text(`Receipt No: ${candidate.receipt}`);
+    // Receipt & Personal Details
+    doc.fontSize(12).fillColor('blue');
+    doc.text(`Receipt No: ${candidate.receipt}`);
     doc.text(`Name: ${candidate.name}`);
     doc.text(`Gender: ${candidate.gender}`);
-    doc.text(`College: ${candidate.college}`);
-    doc.text(`Course: ${candidate.course}`);
-    doc.text(`Year: ${candidate.year}`);
+    doc.text(`College: ${candidate.college || 'N/A'}`);
+    doc.text(`Course: ${candidate.course || 'N/A'}`);
+    doc.text(`Year: ${candidate.year || 'N/A'}`);
     doc.text(`Date of Birth: ${candidate.dob.toDateString()}`);
     doc.text(`Registration Date: ${candidate.registrationDate.toDateString()}`);
     doc.moveDown();
 
-    doc.text(`📞 WhatsApp: ${candidate.whatsappNumber}`);
-    doc.text(`💰 Amount Paid: ₹${candidate.paymentAmount}`);
+    // Contact & Payment Info
+    doc.text(`WhatsApp: ${candidate.whatsappNumber}`);
+    doc.text(`Amount Paid: ₹${candidate.paymentAmount}`);
     doc.text(`Payment ID: ${candidate.paymentId}`);
     doc.text(`Order ID: ${candidate.orderId}`);
     doc.text(`Payment Date: ${candidate.paymentDate.toDateString()}`);
     doc.text(`Method: ${candidate.paymentMethod}`);
     doc.moveDown();
 
-    doc.text(`✅ Status: ${candidate.paymentStatus}`, { color: 'green' });
+    // ✅ Status - Green
+    doc.fillColor('green').text(`Status: ${candidate.paymentStatus}`);
+
     doc.end();
   } catch (err) {
     console.error("Receipt generation error:", err.message);
     res.status(500).json({ success: false, message: "Error generating receipt" });
   }
 });
+
 
 
 
