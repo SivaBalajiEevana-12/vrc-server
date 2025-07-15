@@ -171,7 +171,7 @@ router.post("/mark-attendance", async (req, res) => {
     const message = await gupshup.sendingTextTemplate(
       {
         template: {
-          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          id: '88021e4e-88ae-4cba-bdba-f9b1be3b4948',
           params: [candidate.name],
         },
         'src.name': 'Production',
@@ -204,7 +204,7 @@ router.get("/attendance-list", async (req, res) => {
  }
 });
 router.delete('/asm',async(req,res)=>{
- const del= await Candidate.deleteMany({});
+ const del= await Candidate.deleteMany({name:'sivva'});
  console.log(del.deletedCount);
  return res.json({data:del.deletedCount});
 })
