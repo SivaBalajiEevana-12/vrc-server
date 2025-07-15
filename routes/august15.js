@@ -151,44 +151,48 @@ router.post("/attendance/:phone", async (req, res) => {
 });
 // POST /mark-attendance
 router.post("/mark-attendance", async (req, res) => {
- const { whatsappNumber } = req.body;
- const fullNumber = "91" + whatsappNumber;
+  const { whatsappNumber } = req.body;
+  const fullNumber = "91" + whatsappNumber;
 
+  try {
+    const candidate = await Candidate.findOne({ whatsappNumber: fullNumber });
 
- try {
-   const candidate = await Candidate.findOneAndUpdate(
-     { whatsappNumber: fullNumber },
-     { attendance: true },
-     { new: true }
-   );
+    if (!candidate) {
+      return res.status(404).json({ message: "Candidate not found" });
+    }
 
+    if (candidate.attendance === true) {
+      return res.json({ status: "already-marked", message: "Attendance already taken" });
+    }
 
-   if (!candidate) {
-     return res.status(404).json({ message: "Candidate not found" });
-   }
-       const message = await gupshup.sendingTextTemplate(
-     {
-       template: {
-         id: '868b6c27-b39a-4689-9def-261a5527d3dc',
-         params: [candidate.name],
-       },
-       'src.name': 'Production',
-       destination: fullNumber,
-       source: '917075176108',
-     },
-     {
-       apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
-     }
-   );
-   console.log(message.data);
+    candidate.attendance = true;
+    await candidate.save();
 
+    const message = await gupshup.sendingTextTemplate(
+      {
+        template: {
+          id: '868b6c27-b39a-4689-9def-261a5527d3dc',
+          params: [candidate.name],
+        },
+        'src.name': 'Production',
+        destination: fullNumber,
+        source: '917075176108',
+      },
+      {
+        apikey: 'zbut4tsg1ouor2jks4umy1d92salxm38',
+      }
+    );
 
-   res.json({ status: "success", name: candidate.name });
- } catch (err) {
-   console.error("Attendance marking error:", err);
-   res.status(500).json({ message: "Server error" });
- }
+    console.log(message.data);
+
+    res.json({ status: "success", name: candidate.name });
+
+  } catch (err) {
+    console.error("Attendance marking error:", err);
+    res.status(500).json({ message: "Server error" });
+  }
 });
+
 // GET all candidates who have marked attendance
 router.get("/attendance-list", async (req, res) => {
  try {
