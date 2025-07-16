@@ -44,6 +44,7 @@ cloudinary.config({
 app.use('/register',Register);
 app.use('/college',require('./routes/college'))
 app.use('/july',require('./routes/julyattendence'))
+app.use("/volunteerform", require("./routes/volunteerform"));
 // const sendReminder = async (event, type) => {
 //   console.log(`🔔 Sending ${type} reminder for: ${event.venue} at ${event.cronDate}`);
 //   const users= await Volunteer.find({});
@@ -1971,6 +1972,7 @@ const EVENT_DATE = dayjs("2025-08-15T09:00:00");
 
 const sendMessage = async (candidate, label) => {
   console.log(`[${new Date().toISOString()}] Sending ${label} reminder to ${candidate.name} (${candidate.whatsappNumber})`);
+  
 };
 
 const checkAndSendReminders = async () => {
