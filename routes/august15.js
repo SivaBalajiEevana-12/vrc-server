@@ -69,10 +69,11 @@ const newCandidate = new Candidate({
  year: formData.year, // <- converted to number
  dob: new Date(formData.dob),
  registrationDate: new Date(),
- collegeOrWorking:formData.CollegeOrWorking,
+ collegeOrWorking:formData.collegeOrWorking,
  whatsappNumber: normalizedNumber,
  slot:formData.slot,
  paymentStatus: "Paid",
+ companyName:formData.companyName,
  paymentId: razorpay_payment_id,
  orderId: razorpay_order_id,
  paymentAmount: parseFloat(formData.amount),
